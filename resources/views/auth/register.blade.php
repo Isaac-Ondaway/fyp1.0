@@ -1,6 +1,7 @@
 <x-guest-layout>
-    <form method="POST" action="{{ route('register') }}">
+    <form method="POST" action="{{ route('register.user', $token) }}">
         @csrf
+        <input type="hidden" name="token" value="{{ $token }}">
 
         <!-- Name -->
         <div>
@@ -37,6 +38,10 @@
                             name="password_confirmation" required autocomplete="new-password" />
 
             <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
+        </div>
+
+        <div class="mt-4 text-sm text-gray-100">
+            <p>Note: By registering, your role will be set as <strong>Faculty</strong> by default.</p>
         </div>
 
         <div class="flex items-center justify-end mt-4">

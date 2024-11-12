@@ -31,6 +31,23 @@
             <main>
                 {{ $slot }}
             </main>
+               <!-- Toast Notification -->
+               <div 
+                x-data="{ show: false, message: '' }" 
+                x-show="show" 
+                x-transition 
+                x-init="
+                    @if(session('success'))
+                        show = true; 
+                        message = '{{ session('success') }}'; 
+                        setTimeout(() => show = false, 10000);  // 10 seconds
+                    @endif
+                " 
+                class="fixed bottom-0 right-0 mb-4 mr-4 bg-green-500 text-white py-4 px-6 rounded-lg shadow-xl text-lg"
+                style="display: none;">
+                <span x-text="message"></span>
+            </div>
+            
         </div>
     </body>
 </html>

@@ -28,7 +28,8 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        // Corrected the redirect syntax for intended route
+        return redirect()->intended('/dashboard');
     }
 
     /**
@@ -36,10 +37,26 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        // Retrieve the authenticated user
+        $user = Auth::user();
+
+        if ($user) {
+            // Clear Google tokens from the user's database record
+            $user->google_access_token = null;
+            $user->google_refresh_token = null;
+            $user->google_token_expires_at = null;
+            $user->google_email = null;
+            $user->save();
+        }
+
+        // Clear any Google token stored in the session
+        $request->session()->forget('google_access_token');
+
+        // Log out the user
         Auth::guard('web')->logout();
 
+        // Invalidate the session
         $request->session()->invalidate();
-
         $request->session()->regenerateToken();
 
         return redirect('/');

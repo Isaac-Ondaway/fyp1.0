@@ -33,13 +33,23 @@ class RegisteredUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'token' => 'required|exists:registration_tokens,token'
         ]);
+
+        // Retrieve the token and ensure it’s valid
+        $token = RegistrationToken::where('token', $request->token)
+            ->where('expires_at', '>', now())
+            ->where('used', false)
+            ->firstOrFail();
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);
+
+            // Mark the token as used
+            $token->update(['used' => true]);
 
         event(new Registered($user));
 
