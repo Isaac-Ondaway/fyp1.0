@@ -222,26 +222,36 @@ class ProgramController extends Controller
     public function getProgramsByBatch($batchID)
     {
         $user = Auth::user();
-        
-        // Check if the user is an admin
+    
+        // Retrieve the programs based on the user role
         if ($user->hasRole('admin')) {
-            // Admins can see all programs
-            $programs = Program::where('batchID', $batchID)->get()->groupBy(['facultyID', 'batchID']);
-        } else if ($user->hasRole('faculty')) {
+            // Admins can see all programs grouped by facultyID and batchID
+            $programs = Program::where('batchID', $batchID)
+                               ->get()
+                               ->groupBy(['facultyID', 'batchID']);
+        } elseif ($user->hasRole('faculty')) {
             // Faculty members can only see their own programs
             $programs = Program::where('batchID', $batchID)
                                ->where('facultyID', $user->id)
                                ->get()
                                ->groupBy(['facultyID', 'batchID']);
+        } else {
+            // If the user has no relevant role, return no programs
+            $programs = collect(); // Empty collection
         }
     
+        // Fetch additional data if needed
         $faculties = User::whereHas('roles', function($query) {
             $query->where('type', 'Faculty');
         })->get();
         $batches = Batch::orderBy('batchStartDate', 'desc')->get();
     
-        return view('programs.partials.program_list', compact('programs', 'faculties', 'batches'));
+        // Render the view with a noProgramsMessage if programs are empty
+        $noProgramsMessage = $programs->isEmpty() ? 'No programs found for the selected batch.' : null;
+    
+        return view('programs.partials.program_list', compact('programs', 'faculties', 'batches', 'noProgramsMessage'));
     }
+    
     
     
 

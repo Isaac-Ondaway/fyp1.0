@@ -63,6 +63,7 @@ Route::middleware('auth')->group(function () {
 // Route to store a new intake
 Route::post('/intakes', [IntakesController::class, 'store'])->name('intakes.store');
 Route::get('/intakes', [IntakesController::class, 'index'])->name('intakes.index');
+Route::post('/intakes/storeAll', [IntakesController::class, 'storeAll'])->name('intakes.storeAll');
 // Include the routes for authentication (login, register, etc.)
 require __DIR__.'/auth.php';
 
@@ -108,6 +109,7 @@ Route::get('/auth/google-calendar/callback', [GoogleCalendarController::class, '
 
 //Batches Route
 Route::resource('batches', BatchController::class);
+
 
 
 

@@ -14,65 +14,105 @@ use Illuminate\Support\Facades\Auth;
 
 class IntakesController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $user = Auth::user(); // Get the current logged-in user
-
-        // Check if the user has the 'admin' role
-        if ($user->hasRole('admin')) {
-            // Admin can see all programs and all existing program entry levels
-            $programs = Program::all();
-            $programEntryLevels = ProgramEntryLevel::all();
-        } else {
-            // Faculty member can only see programs they own and related program entry levels
-            $programs = Program::where('facultyID', $user->id)->get();
-            $programEntryLevels = ProgramEntryLevel::whereHas('program', function ($query) use ($user) {
-                $query->where('facultyID', $user->id);
-            })->get();
-        }
-
+        $user = Auth::user();
+        $selectedBatchID = $request->input('batch_id');
+    
+        // Get batches and entry levels
         $batches = Batch::all();
         $entryLevels = EntryLevel::all();
-
-        return view('intakes.index', compact('programs', 'batches', 'entryLevels', 'programEntryLevels'));
+    
+        // Retrieve programs based on user role and selected batch
+        if ($user->hasRole('admin')) {
+            $programs = Program::when($selectedBatchID, function ($query) use ($selectedBatchID) {
+                return $query->where('batchID', $selectedBatchID);
+            })->get();
+        } else {
+            $programs = Program::where('facultyID', $user->id)
+                ->when($selectedBatchID, function ($query) use ($selectedBatchID) {
+                    return $query->where('batchID', $selectedBatchID);
+                })->get();
+        }
+    
+        // Retrieve existing intake data for each program and entry level
+        $existingIntakes = ProgramEntryLevel::where('batch_id', $selectedBatchID)
+            ->get()
+            ->groupBy('program_id')
+            ->mapWithKeys(function ($intakes, $programID) {
+                return [$programID => $intakes->keyBy('entry_level_id')->map->intake_count];
+            });
+    
+        return view('intakes.index', compact('programs', 'batches', 'entryLevels', 'selectedBatchID', 'existingIntakes'));
     }
+    
+    
 
 
     public function store(Request $request)
     {
-        $validatedData = $request->validate([
-            'program_id' => 'required|array',
-            'batch_id' => 'required|array',
-            'entry_level_id' => 'required|array',
-            'intake_count' => 'required|array',
-        ]);
+        $batchID = $request->input('batch_id'); // Retrieve the batch ID
+        $programID = $request->input('program_id'); // Retrieve the program ID
+        $intakes = $request->input('intake'); // This should contain 'stpm', 'stam', and 'diploma' values
     
+        // Map entry levels to their corresponding IDs
+        $entryLevels = [
+            'stpm' => 1, // Replace with actual ID for STPM
+            'stam' => 2, // Replace with actual ID for STAM
+            'diploma' => 3, // Replace with actual ID for Diploma Setaraf
+        ];
     
-        foreach ($request->program_id as $key => $programID) {
-    
-            ProgramEntryLevel::updateOrCreate(
-                [
-                    'program_id' => $programID,
-                    'batch_id' => $request->batch_id[$key],
-                    'entry_level_id' => $request->entry_level_id[$key],
-                ],
-                [
-                    'intake_count' => $request->intake_count[$key],
-                ]
-            );
+        // Loop through each intake type and store/update in the database
+        foreach ($intakes as $level => $count) {
+            if ($count > 0) { // Only store if intake count is greater than zero
+                ProgramEntryLevel::updateOrCreate(
+                    [
+                        'program_id' => $programID,
+                        'batch_id' => $batchID,
+                        'entry_level_id' => $entryLevels[$level],
+                    ],
+                    [
+                        'intake_count' => $count,
+                    ]
+                );
+            }
         }
     
-        return back()->with('success', 'Data successfully saved!');
+        return redirect()->back()->with('success', 'Intake numbers saved successfully.');
     }
-
-
     
-
-
-
-
-
-
-
+    public function storeAll(Request $request)
+    {
+        $batchID = $request->input('batch_id');
+        $intakes = $request->input('intake');
+    
+        // Map entry levels to their corresponding IDs
+        $entryLevels = [
+            'stpm' => 1, // Replace with actual ID for STPM
+            'stam' => 2, // Replace with actual ID for STAM
+            'diploma' => 3, // Replace with actual ID for Diploma Setaraf
+        ];
+    
+        // Loop through each program's intake data
+        foreach ($intakes as $programID => $counts) {
+            foreach (['stpm', 'stam', 'diploma'] as $entryLevel) {
+                if (isset($counts[$entryLevel]) && $counts[$entryLevel] > 0) {
+                    ProgramEntryLevel::updateOrCreate(
+                        [
+                            'program_id' => $programID,
+                            'batch_id' => $batchID,
+                            'entry_level_id' => $entryLevels[$entryLevel],
+                        ],
+                        [
+                            'intake_count' => $counts[$entryLevel],
+                        ]
+                    );
+                }
+            }
+        }
+    
+        return redirect()->back()->with('success', 'All intake numbers saved successfully.');
+    }
+    
 
 }
