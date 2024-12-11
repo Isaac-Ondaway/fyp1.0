@@ -26,4 +26,10 @@ class EntryLevelCategory extends Model
     {
         return $this->hasMany(ProgramEntryLevel::class, 'entryLevelCategoryID', 'entryLevelCategoryID');
     }
+
+    public function programMappings()
+    {
+        return $this->hasMany(ProgramEntryLevelMapping::class, 'entry_level_category_id', 'entryLevelCategoryID');
+    }
+
 }

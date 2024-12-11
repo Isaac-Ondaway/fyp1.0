@@ -3,7 +3,7 @@
         @foreach($programs as $facultyID => $batchesGroup)
             <div class="mb-6">
                 <h2 class="text-lg font-semibold text-gray-100 bg-gray-600 p-3 rounded-t-lg">
-                    {{ optional($faculties->firstWhere('id', $facultyID))->name ?? 'Not found' }}
+                    {{$batchesGroup->first()?->first()?->faculty?->name ?? 'Faculty Not Found' }}
                 </h2>
 
                 @foreach($batchesGroup as $batchID => $programsInBatch)
@@ -35,11 +35,14 @@
                                                 </span>
                                             </td>                        
                                             <td class="py-2 px-4 text-center">
-                                                <a href="{{ route('programs.edit', ['programID' => $program->programID, 'batchID' => $program->batchID]) }}" class="text-white bg-blue-500 hover:bg-blue-700 font-bold py-1 px-3 rounded-lg">Edit</a>
+                                                <a href="{{ route('programs.edit', ['programID' => $program->programID, 'batchID' => $program->batchID]) }}" 
+                                                class="text-white bg-blue-500 hover:bg-blue-700 font-bold py-1 px-3 rounded-lg"
+                                                onclick="event.stopPropagation()">Edit</a>
                                                 <form action="{{ route('programs.destroy', ['programID' => $program->programID, 'batchID' => $program->batchID]) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this program?');">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="text-white bg-red-500 hover:bg-red-700 font-bold py-1 px-3 rounded-lg">Delete</button>
+                                                    <button type="submit" class="text-white bg-red-500 hover:bg-red-700 font-bold py-1 px-3 rounded-lg"
+                                                    onclick="event.stopPropagation()">Delete</button>
                                                 </form>
                                             </td>
                                         </tr>

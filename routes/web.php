@@ -9,9 +9,14 @@ use App\Http\Controllers\EventController;
 use App\Http\Controllers\RegisterTokenController;
 use App\Http\Controllers\GoogleCalendarController;
 use App\Http\Controllers\BatchController;
-
+use App\Http\Controllers\InterviewScheduleController;
+use App\Http\Controllers\FacultyController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ChatSessionController;
+use App\Http\Controllers\DashboardController;
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Broadcast;
 use Inertia\Inertia;
 
 // Home Route
@@ -35,10 +40,10 @@ Route::post('/register/{token}', [RegisterTokenController::class, 'registerUser'
  
 
 // Dashboard Route - Accessible only to authenticated and verified users
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth'])->name('dashboard');
-
+// Dashboard Route
+Route::middleware(['auth'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+});
 
 
 // Profile Management Routes
@@ -57,6 +62,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/programs/{programID}/{batchID}/edit', [ProgramController::class, 'edit'])->name('programs.edit');
     Route::patch('/programs/{programID}/{batchID}', [ProgramController::class, 'update'])->name('programs.update');
     Route::delete('/programs/{programID}/{batchID}', [ProgramController::class, 'destroy'])->name('programs.destroy');
+    Route::get('/programs/manage-entry-levels', [ProgramController::class, 'manageEntryLevels'])->name('programs.manage_entry_levels');
+    Route::post('/programs/manage-entry-levels', [ProgramController::class, 'updateEntryLevels'])->name('programs.update_entry_levels');
+
 });
 
 
@@ -69,6 +77,10 @@ require __DIR__.'/auth.php';
 
 
 // Custom Interview Routes
+Route::get('/interviews', [InterviewController::class, 'index'])
+    ->name('interviews.index')
+    ->middleware('auth'); // Only include if authentication is required
+
 Route::get('/interviews/upload-csv', [InterviewController::class, 'uploadCsv'])->name('interviews.uploadCsv');
 Route::post('/interviews/bulk-upload', [InterviewController::class, 'bulkUpload'])->name('interviews.bulkUpload');
 Route::post('/interviews/bulk-store', [InterviewController::class, 'bulkStore'])->name('interviews.bulkStore');
@@ -110,6 +122,44 @@ Route::get('/auth/google-calendar/callback', [GoogleCalendarController::class, '
 //Batches Route
 Route::resource('batches', BatchController::class);
 
+//Interview Scheduling 
+Route::get('/interviews-schedule', [InterviewScheduleController::class, 'index'])->name('interviews-schedule.index');
+Route::get('/interviews-schedule/create/{interviewee_id}', [InterviewScheduleController::class, 'create'])->name('interviews-schedule.create');
+Route::post('/interviews-schedule', [InterviewScheduleController::class, 'store'])->name('interviews-schedule.store');
+Route::get('/interviews-schedule/calendar-events', [InterviewScheduleController::class, 'calendarEvents']);
+Route::get('/interviews-schedule/{id}/edit', [InterviewScheduleController::class, 'edit'])->name('interviews-schedule.edit');
+Route::put('/interviews-schedule/{id}', [InterviewScheduleController::class, 'update'])->name('interviews-schedule.update');
+Route::delete('/interviews-schedule/{id}', [InterviewScheduleController::class, 'destroy'])->name('interviews-schedule.destroy');
+Route::get('/interviews-schedule/events-for-date', [InterviewScheduleController::class, 'getEventsForDate']);
+
+Route::post('/send-email', [InterviewScheduleController::class, 'scheduleInterview'])->name('interview.schedule');
+
+//Faculty Route
+
+Route::resource('faculty', FacultyController::class);
+
+//Report Route
+Route::get('/reports/combined', [ReportController::class, 'combinedReport'])->name('reports.combined');
 
 
+// Chat Routes for Authenticated Users
+Route::middleware(['auth'])->group(function () {
+    // Shared routes for both admin and faculty
+    Route::get('/chats/{sessionId}/messages', [ChatSessionController::class, 'fetchMessages'])->name('chats.fetchMessages');
+    Route::post('/chats/{sessionId}/message', [ChatSessionController::class, 'sendMessage'])->name('chats.sendMessage');
+    
+    // Admin-specific routes
+    Route::prefix('admin')->group(function () {
+        Route::get('/chats', [ChatSessionController::class, 'adminIndex'])->name('admin.chats.index');
+        Route::get('/chats/{sessionId}/messages', [ChatSessionController::class, 'getAdminMessages'])->name('admin.chats.messages');
+        Route::post('/chats/{sessionId}/message', [ChatSessionController::class, 'sendAdminMessage'])->name('admin.chats.sendMessage');
+    });
 
+    // Fetch session ID for chat
+    Route::get('/chat/session-id', [ChatSessionController::class, 'getSessionId'])->name('chat.getSessionId');
+});
+
+Route::middleware(['auth'])->group(function () {
+    Broadcast::routes(); // Register broadcasting routes
+    require base_path('routes/channels.php'); // Load the channels file
+});

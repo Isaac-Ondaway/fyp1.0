@@ -26,13 +26,26 @@ class Program extends Model
         'programFee',
         'programStatus',
         'programDesc',
+        'studyProgram',
+        'isInterviewExam',
+        'isUjianMedsi',
+        'isRayuan',
+        'isDDegree',
+        'learnMod',
+        'isBumiputera',
+        'isTEVT',
+        'isKompetitif',
+        'isBTECH',
+        'isOKU',
     ];
+    
 
     // Define the relationship with the User model function 
     public function faculty()
     {
-        return $this->belongsTo(User::class, 'facultyID');
+        return $this->belongsTo(Faculty::class, 'facultyID', 'id');
     }
+    
 
     public function batch()
     {
@@ -49,4 +62,10 @@ class Program extends Model
     {
         return $this->hasMany(Interview::class, 'programID', 'programID');
     }
+
+    public function entryLevelMappings()
+    {
+        return $this->hasMany(ProgramEntryLevelMapping::class, ['programID', 'batchID'], ['programID', 'batchID']);
+    }
+
 }

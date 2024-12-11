@@ -61,15 +61,10 @@
                     <div class="mt-4"></div>
                     
                     <div>
-                        <label for="interviewees[0][interviewStatus]" class="block text-gray-300 font-semibold mb-2">Interview Status</label>
-                        <select name="interviewees[0][interviewStatus]" class="form-select w-full rounded-md shadow-sm bg-gray-700 text-gray-100 focus:border-blue-500 focus:ring-blue-500" required>
-                            <option value="Pending">Pending</option>
-                            <option value="Scheduled">Scheduled</option>
-                            <option value="Completed">Completed</option>
-                            <option value="Canceled">Canceled</option>
-                        </select>
+                        <label for="interviewees[0][email]" class="block text-gray-300 font-semibold mb-2">Email</label>
+                        <input type="email" name="interviewees[0][email]" placeholder="Email Address" class="form-input w-full rounded-md shadow-sm bg-gray-700 text-gray-100 focus:border-blue-500 focus:ring-blue-500" required>
                     </div>
-                    
+
                     <!-- Remove Button -->
                     <div class="mt-4">
                         <button type="button" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg" onclick="removeInterviewee('interviewee-0')">Remove</button>
@@ -118,13 +113,8 @@
             <div class="mt-4"></div>
 
             <div>
-                <label for="interviewees[${intervieweeCount}][interviewStatus]" class="block text-gray-300 font-semibold mb-2">Interview Status</label>
-                <select name="interviewees[${intervieweeCount}][interviewStatus]" class="form-select w-full rounded-md shadow-sm bg-gray-700 text-gray-100 focus:border-blue-500 focus:ring-blue-500" required>
-                    <option value="Pending">Pending</option>
-                    <option value="Scheduled">Scheduled</option>
-                    <option value="Completed">Completed</option>
-                    <option value="Canceled">Canceled</option>
-                </select>
+                <label for="interviewees[${intervieweeCount}][email]" class="block text-gray-300 font-semibold mb-2">Email</label>
+                <input type="email" name="interviewees[${intervieweeCount}][email]" placeholder="Email Address" class="form-input w-full rounded-md shadow-sm bg-gray-700 text-gray-100 focus:border-blue-500 focus:ring-blue-500" required>
             </div>
 
             <!-- Remove Button -->
@@ -144,35 +134,34 @@
     }
 </script>
 
-    
-    <script>
-            document.getElementById('programID').addEventListener('change', function() {
-                let programID = this.value;
-                let batchSelect = document.getElementById('batchID');
-                
-                // Clear existing options
-                batchSelect.innerHTML = '<option value="">Choose a Batch</option>';
-                
-                if (programID) {
-                    // Fetch batches based on selected program
-                    fetch(`/interviews/get-batches/${programID}`)
-                        .then(response => response.json())
-                        .then(batches => {
-                            if (batches.length > 0) {
-                                batches.forEach(batch => {
-                                    let option = document.createElement('option');
-                                    option.value = batch.batchID;
-                                    option.text = batch.batchName;
-                                    batchSelect.appendChild(option);
-                                });
-                            } else {
-                                let noBatchOption = document.createElement('option');
-                                noBatchOption.text = 'No batches available';
-                                batchSelect.appendChild(noBatchOption);
-                            }
-                        })
-                        .catch(error => console.error('Error fetching batches:', error));
-                }
-            });
-        </script>
+<script>
+    document.getElementById('programID').addEventListener('change', function() {
+        let programID = this.value;
+        let batchSelect = document.getElementById('batchID');
+        
+        // Clear existing options
+        batchSelect.innerHTML = '<option value="">Choose a Batch</option>';
+        
+        if (programID) {
+            // Fetch batches based on selected program
+            fetch(`/interviews/get-batches/${programID}`)
+                .then(response => response.json())
+                .then(batches => {
+                    if (batches.length > 0) {
+                        batches.forEach(batch => {
+                            let option = document.createElement('option');
+                            option.value = batch.batchID;
+                            option.text = batch.batchName;
+                            batchSelect.appendChild(option);
+                        });
+                    } else {
+                        let noBatchOption = document.createElement('option');
+                        noBatchOption.text = 'No batches available';
+                        batchSelect.appendChild(noBatchOption);
+                    }
+                })
+                .catch(error => console.error('Error fetching batches:', error));
+        }
+    });
+</script>
 </x-app-layout>

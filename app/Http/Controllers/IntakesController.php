@@ -25,14 +25,17 @@ class IntakesController extends Controller
     
         // Retrieve programs based on user role and selected batch
         if ($user->hasRole('admin')) {
+            // Admin can see all programs
             $programs = Program::when($selectedBatchID, function ($query) use ($selectedBatchID) {
                 return $query->where('batchID', $selectedBatchID);
-            })->get();
+            })->with('faculty')->get(); // Add 'faculty' relationship for additional data
         } else {
-            $programs = Program::where('facultyID', $user->id)
+            // Faculty members can see only their faculty's programs
+            $programs = Program::where('facultyID', $user->faculty->id) // Adjusted to fetch based on faculty relationship
                 ->when($selectedBatchID, function ($query) use ($selectedBatchID) {
                     return $query->where('batchID', $selectedBatchID);
-                })->get();
+                })->with('faculty') // Add 'faculty' relationship for additional data
+                ->get();
         }
     
         // Retrieve existing intake data for each program and entry level
@@ -45,6 +48,7 @@ class IntakesController extends Controller
     
         return view('intakes.index', compact('programs', 'batches', 'entryLevels', 'selectedBatchID', 'existingIntakes'));
     }
+    
     
     
 

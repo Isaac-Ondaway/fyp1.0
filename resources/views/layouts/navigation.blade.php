@@ -29,16 +29,24 @@
                         {{ __('Interview') }}
                     </x-nav-link>
 
-                    <x-nav-link :href="route('bookings.index')" :active="request()->routeIs('bookings.index')">
-                        {{ __('DKP Booking') }}
+                    <x-nav-link :href="route('interviews-schedule.index')" :active="request()->routeIs('interviews-schedule.index')">
+                        {{ __('Interview Scheduling') }}
                     </x-nav-link>
 
-                    <x-nav-link :href="route('batches.index')" :active="request()->routeIs('batches.index')">
-                        {{ __('Batches') }}
+                    <x-nav-link :href="route('programs.manage_entry_levels')" :active="request()->routeIs('programs.manage_entry_levels')">
+                        {{ __('Entry Levels') }}
                     </x-nav-link>
 
                     @auth
                         @if (auth()->user()->hasRole('admin'))
+                            <x-nav-link :href="route('batches.index')" :active="request()->routeIs('batches.index')">
+                                {{ __('Batches') }}
+                            </x-nav-link>
+                            
+                            <x-nav-link :href="route('faculty.index')" :active="request()->routeIs('faculty.index')">
+                                {{ __('Faculty') }}
+                            </x-nav-link>
+
                             <x-nav-link :href="route('admin.user.list')" :active="request()->routeIs('admin.user.list')">
                                 {{ __('User Manage') }}
                             </x-nav-link>

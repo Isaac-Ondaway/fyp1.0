@@ -61,8 +61,7 @@ class ProgramPolicy
      */
     public function create(User $user)
     {
-        // Only faculty members can create programs
-        return $user->hasRole('faculty');
+        return $user->hasRole('admin') || $user->hasRole('faculty');
     }
 
     /**
@@ -71,7 +70,7 @@ class ProgramPolicy
     public function update(User $user, Program $program)
     {
         // Admins can update any program, faculty can only update their own
-        return $user->hasRole('admin') || $user->id === $program->facultyID;
+        return $user->hasRole('admin') || $user->facultyID === $program->facultyID;
     }
 
     /**

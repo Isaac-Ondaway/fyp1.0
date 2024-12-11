@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 use App\Models\RegistrationToken;
 use App\Models\User;
 use App\Models\Role;
+use App\Models\Faculty;
 
 
 class RegisterTokenController extends Controller
@@ -33,31 +35,39 @@ class RegisterTokenController extends Controller
 
     public function listUsers(Request $request)
     {
+        // Ensure only admins can access this method
         if (!auth()->user()->hasRole('admin')) {
             return redirect('/')->with('error', 'You do not have admin access.');
         }
     
-        $roleID = $request->input('roleID'); // Get the current role filter from the request
-        $roles = Role::all(); // Fetch all roles
+        // Get the selected role ID from the request (if any)
+        $roleID = $request->input('roleID');
     
-        // Fetch users with roles and apply the filter if a role is selected
-        $users = User::with('roles')
+        // Fetch all available roles for the dropdown filter
+        $roles = Role::all();
+    
+        // Fetch users, eager-load their faculty and roles, and apply the role filter if specified
+        $users = User::with('faculty', 'roles')
             ->when($roleID, function ($query, $roleID) {
                 $query->whereHas('roles', function ($q) use ($roleID) {
-                    $q->where('rolesID', $roleID); // Use the correct column name for roles
+                    $q->where('rolesID', $roleID); // Ensure 'rolesID' matches your database column
                 });
             })
             ->get();
+
     
+        // Pass users, roles, and the current role filter to the view
         return view('admin.user-list', compact('users', 'roles', 'roleID'));
     }
+    
     
 
     public function edit($id)
     {
         $user = User::findOrFail($id);
         $allRoles = Role::all(); // Fetch all roles for the dropdown
-        return view('admin.edit-user', compact('user', 'allRoles'));
+        $allFaculties = Faculty::all();
+        return view('admin.edit-user', compact('user', 'allRoles', 'allFaculties'));
     }
 
     public function update(Request $request, $id)
@@ -67,20 +77,23 @@ class RegisterTokenController extends Controller
         // Validate the request
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-            'roles' => 'required|exists:roles,rolesID',
+            'email' => 'required|email|max:255|unique:users,email,' . $id, // Ensure email is unique, except for the current user
+            'roles' => 'required|exists:roles,rolesID', // Validate roles
+            'facultyID' => 'required|exists:faculty,id', // Ensure the selected faculty exists
         ]);
     
         // Update user details
         $user->name = $request->input('name');
         $user->email = $request->input('email');
+        $user->facultyID = $request->input('facultyID'); // Save the selected faculty ID
         $user->save();
     
         // Sync roles in the role_user table
-        $user->roles()->sync([$request->input('roles')]); // This is the correct place for this line
+        $user->roles()->sync([$request->input('roles')]); // Sync the selected role
     
         return redirect()->route('admin.user.list')->with('success', 'User updated successfully.');
     }
+    
     
 
     

@@ -26,13 +26,24 @@
                 <div class="mb-4">
                     <label for="roles" class="block text-gray-300 font-semibold mb-2">Roles:</label>
                     <select id="roles" name="roles" class="form-select w-full rounded-md shadow-sm bg-gray-700 text-gray-100 focus:border-blue-500 focus:ring-blue-500">
-                        <option value="">Select a Role</option>
+                        <option value="" disable>Select a Role</option>
                         @foreach($allRoles as $role)
                         <option value="{{ $role->rolesID }}" {{ $user->roles->first() && $user->roles->first()->rolesID == $role->rolesID ? 'selected' : '' }}>{{ $role->type }}</option>
                         @endforeach
                     </select>
                 </div>
 
+                <div class="mb-4">
+                    <label for="facultyID" class="block text-gray-300 font-semibold mb-2">Faculty:</label>
+                    <select id="facultyID" name="facultyID" class="form-select w-full rounded-md shadow-sm bg-gray-700 text-gray-100 focus:border-blue-500 focus:ring-blue-500">
+                        <option value="">Select a Faculty</option>
+                        @foreach($allFaculties as $faculty)
+                        <option value="{{ $faculty->id }}" {{ $user->facultyID == $faculty->id ? 'selected' : '' }}>
+                            {{ $faculty->name }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
 
                 <div class="flex justify-end">
                     <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">Update User</button>

@@ -10,8 +10,10 @@ class Batch extends Model
     use HasFactory;
 
     protected $primaryKey = 'batchID'; // Primary key
+    public $incrementing = false;
 
     protected $fillable = [
+        'batchID',
         'batchName',
         'batchStartDate',
     ];
@@ -20,5 +22,10 @@ class Batch extends Model
     public function programs()
     {
         return $this->hasMany(Program::class, 'batchID', 'batchID'); // 'batchID' in the programs table
+    }
+
+    public function programEntryLevels()
+    {
+        return $this->hasMany(ProgramEntryLevel::class, 'batch_id', 'batchID');
     }
 }

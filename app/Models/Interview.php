@@ -17,18 +17,30 @@ class Interview extends Model
         'batchID',
         'intervieweeName',
         'contactNumber',
-        'interviewStatus'
+        'email'
     ];
 
-    // Relation with Program
+    /**
+     * Relation with Program
+     */
     public function program()
     {
         return $this->belongsTo(Program::class, 'programID', 'programID');
     }
 
-    // Relation with Batch via Program
+    /**
+     * Relation with Batch
+     */
     public function batch()
     {
-        return $this->program->batch();
+        return $this->belongsTo(Batch::class, 'batchID', 'batchID');
+    }
+
+    /**
+     * Relation with InterviewSchedule
+     */
+    public function interviewSchedule()
+    {
+        return $this->hasOne(InterviewSchedule::class, 'interviewee_id', 'interviewID');
     }
 }

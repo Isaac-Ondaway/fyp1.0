@@ -24,11 +24,16 @@ class BatchController extends Controller
     public function store(Request $request)
     {
         $request->validate([
+            'batchID' => 'required|unique:batches,batchID|regex:/^[0-9]+$/', // Example for numeric batchID
             'batchName' => 'required|string|max:255',
             'batchStartDate' => 'required|date',
         ]);
 
-        Batch::create($request->only(['batchName', 'batchStartDate']));
+        Batch::create([
+            'batchID' => $request->batchID,
+            'batchName' => $request->batchName,
+            'batchStartDate' => $request->batchStartDate,
+        ]);
 
         return redirect()->route('batches.index')->with('success', 'Batch created successfully.');
     }
@@ -43,16 +48,25 @@ class BatchController extends Controller
     // Update the specified batch in the database
     public function update(Request $request, $id)
     {
+        $batch = Batch::findOrFail($id);
+    
+        // Validation rules
         $request->validate([
+            'batchID' => 'required|string|unique:batches,batchID,' . $batch->batchID . ',batchID', // Allow current batchID
             'batchName' => 'required|string|max:255',
             'batchStartDate' => 'required|date',
         ]);
-
-        $batch = Batch::findOrFail($id);
-        $batch->update($request->only(['batchName', 'batchStartDate']));
-
+    
+        // Update the batch
+        $batch->update([
+            'batchID' => $request->batchID, // Include batchID if you want it to be updatable
+            'batchName' => $request->batchName,
+            'batchStartDate' => $request->batchStartDate,
+        ]);
+    
         return redirect()->route('batches.index')->with('success', 'Batch updated successfully.');
     }
+    
 
     // Remove the specified batch from the database
     public function destroy($id)

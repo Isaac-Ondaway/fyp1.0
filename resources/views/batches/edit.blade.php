@@ -14,7 +14,7 @@
                 @method('PUT')
                 <div>
                     <label for="batchID" class="block text-gray-300 font-semibold mb-2">Batch ID</label>
-                    <input type="text" class="w-full border border-gray-600 bg-gray-900 text-gray-300 rounded-lg px-4 py-2 focus:outline-none" id="batchID" name="batchID" value="{{ $batch->batchID }}" readonly>
+                    <input type="text" class="w-full border border-gray-600 bg-gray-900 text-gray-300 rounded-lg px-4 py-2 focus:outline-none" id="batchID" name="batchID" value="{{ $batch->batchID }}" required>
                 </div>
                 <div>
                     <label for="batchName" class="block text-gray-300 font-semibold mb-2">Batch Name</label>

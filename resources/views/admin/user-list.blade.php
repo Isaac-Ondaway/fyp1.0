@@ -4,7 +4,6 @@
             {{ __('Users') }}
         </h2>
     </x-slot>
-
     <div class="container mx-auto py-8">
         <h1 class="text-3xl font-extrabold mb-8 text-gray-200">User List</h1>
 
@@ -41,6 +40,7 @@
                                 <th class="py-2 px-4">User ID</th>
                                 <th class="py-2 px-4">Name</th>
                                 <th class="py-2 px-4">Email</th>
+                                <th class="py-2 px-4">Faculty</th>
                                 <th class="py-2 px-4">Roles</th>
                                 <th class="py-2 px-4 text-center">Actions</th>
                             </tr>
@@ -51,6 +51,10 @@
                                     <td class="py-2 px-4">{{ $user->id }}</td>
                                     <td class="py-2 px-4">{{ $user->name }}</td>
                                     <td class="py-2 px-4">{{ $user->email }}</td>
+                                    <td class="py-2 px-4">
+                                        {{ $user->faculty ? $user->faculty->name : 'Not Assigned' }}
+
+                                    </td>
                                     <td class="py-2 px-4">
                                         @foreach($user->roles as $role)
                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 

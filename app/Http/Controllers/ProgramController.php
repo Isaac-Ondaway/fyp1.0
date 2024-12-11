@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Program;
 use App\Models\Batch;
+use App\Models\Faculty;
+use App\Models\EntryLevelCategory;
+use App\Models\ProgramEntryLevelMapping;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -12,63 +15,34 @@ use Illuminate\Support\Facades\Log;
 class ProgramController extends Controller
 {
 
-    // public function index(Request $request)
-    // {
-    //     $this->authorize('viewAny', Program::class);
-        
-    //     $batchID = $request->input('batchID');
-    //     $facultyID = $request->input('facultyID');
-
-    //     // Fetch batches and faculties for filters
-    //     $batches = Batch::orderBy('batchStartDate', 'desc')->get();
-    //     $faculties = User::whereHas('roles', function($query) {
-    //         $query->where('type', 'Faculty');
-    //     })->get();
-
-    //     // Initialize the query builder
-    //     $query = Program::query();
-
-    //     // Apply batch filter if selected
-    //     if ($batchID) {
-    //         $query->where('batchID', $batchID);
-    //     }
-
-    //     // If the user is an admin, allow them to filter by facultyID or see all programs
-    //     if (Auth::user()->hasRole('admin')) {
-    //         if ($facultyID) {
-    //             $query->where('facultyID', $facultyID);
-    //         }
-    //     } else if (Auth::user()->hasRole('faculty')) {
-    //         // If the user is a faculty member, restrict to their own programs
-    //         $query->where('facultyID', Auth::id());
-    //     }
-
-    //     // Get the programs and sort them by batch start date
-    //     $programs = $query->get()->sortByDesc(function ($program) {
-    //         return optional($program->batch)->batchStartDate;
-    //     })->groupBy(['facultyID', 'batchID']);
-
-    //     return view('programs.index', compact('programs', 'batches', 'faculties', 'batchID', 'facultyID'));
-    // }
-
     public function index(Request $request)
     {
         $this->authorize('viewAny', Program::class);
     
-        // If the user is an admin, show all programs; otherwise, show only the user’s programs
-        $query = Auth::user()->hasRole('admin') ? Program::query() : Program::where('facultyID', Auth::id());
+        $user = Auth::user();
     
-        // Get programs grouped by faculty for the simplified view
-        $programs = $query->select('programID', 'programName', 'levelEdu', 'programStatus', 'facultyID')
-                          ->with('faculty')
-                          ->get()
-                          ->groupBy('facultyID');
+        if ($user->hasRole('admin')) {
+            // Admin can see all programs
+            $programs = Program::with('faculty')
+                ->select('programID', 'programName', 'levelEdu', 'programStatus', 'facultyID', 'batchID')
+                ->get()
+                ->groupBy('facultyID');
+        } else {
+            // Faculty user can see only programs belonging to their faculty
+            $programs = Program::with('faculty')
+                ->where('facultyID', $user->facultyID)
+                ->select('programID', 'programName', 'levelEdu', 'programStatus', 'facultyID', 'batchID')
+                ->get()
+                ->groupBy('facultyID');
+        }
     
-        // Fetch all batches
+        $faculties = Faculty::all(); // Fetch all faculties
+
         $batches = Batch::orderBy('batchStartDate', 'desc')->get();
     
-        return view('programs.index', compact('programs', 'batches'));
+        return view('programs.index', compact('programs', 'batches', 'faculties'));
     }
+    
     
 
     /**
@@ -76,18 +50,22 @@ class ProgramController extends Controller
      */
     public function create()
     {
-        // Authorize the request
         $this->authorize('create', Program::class);
     
-        // Get the faculty name from the authenticated user
-        $facultyName = Auth::user()->name;
+        $user = Auth::user();
+        $faculties = [];
+    
+        if ($user->hasRole('admin')) {
+            // Admin can choose from all faculties
+            $faculties = Faculty::all();
+        }
     
         // Retrieve all batches from the database
         $batches = Batch::all();
     
-        // Pass both facultyName and batches to the view
-        return view('programs.create', compact('facultyName', 'batches'));
+        return view('programs.create', compact('faculties', 'batches', 'user'));
     }
+    
     
     /**
      * Store a newly created program in the database.
@@ -97,15 +75,17 @@ class ProgramController extends Controller
         // Authorize the request
         $this->authorize('create', Program::class);
     
-        // Validate the request input
-        $request->validate([
+        $user = Auth::user();
+    
+        // Validation rules
+        $rules = [
             'programID' => 'required|string|max:255|unique:programs,programID',
             'batchID' => 'required|exists:batches,batchID',
             'programName' => 'required|string|max:255',
             'programSem' => 'required|integer',
             'levelEdu' => 'required|string|in:Diploma,Undergraduate,Postgraduate',
             'NEC' => 'required|string|in:Code1,Code2,Code3',
-            'programFee' => 'required|string',  // Changed to string since it allows detailed descriptions
+            'programFee' => 'required|string',
             'programDesc' => 'nullable|string|max:1000',
             'studyProgram' => 'required|string|max:255',
             'isInterviewExam' => 'required|boolean',
@@ -118,36 +98,31 @@ class ProgramController extends Controller
             'isKompetitif' => 'required|boolean',
             'isBTECH' => 'required|boolean',
             'isOKU' => 'required|boolean',
-        ]);
+        ];
+    
+        // If the user is an admin, include facultyID in validation
+        if ($user->hasRole('admin')) {
+            $rules['facultyID'] = 'required|exists:faculty,id';
+            $rules['programStatus'] = 'required|in:Pending,Approved,Rejected'; // Optional for admin
+        }
+    
+        // Validate the request input
+        $validatedData = $request->validate($rules);
+    
+        // Automatically assign facultyID for non-admin users
+        if (!$user->hasRole('admin')) {
+            $validatedData['facultyID'] = $user->facultyID;
+            $validatedData['programStatus'] = 'Pending'; // Non-admin users can't set status
+        }
     
         // Create a new program record
-        Program::create([
-            'programID' => $request->input('programID'),
-            'batchID' => $request->input('batchID'),
-            'facultyID' => Auth::id(),
-            'programName' => $request->input('programName'),
-            'programSem' => $request->input('programSem'),
-            'levelEdu' => $request->input('levelEdu'),
-            'NEC' => $request->input('NEC'),
-            'programFee' => $request->input('programFee'),
-            'programStatus' => 'Pending', // Default status
-            'programDesc' => $request->input('programDesc'),
-            'studyProgram' => $request->input('studyProgram'),
-            'isInterviewExam' => $request->input('isInterviewExam'),
-            'isUjianMedsi' => $request->input('isUjianMedsi'),
-            'isRayuan' => $request->input('isRayuan'),
-            'isDDegree' => $request->input('isDDegree'),
-            'learnMod' => $request->input('learnMod'),
-            'isBumiputera' => $request->input('isBumiputera'),
-            'isTEVT' => $request->input('isTEVT'),
-            'isKompetitif' => $request->input('isKompetitif'),
-            'isBTECH' => $request->input('isBTECH'),
-            'isOKU' => $request->input('isOKU'),
-        ]);
+        Program::create($validatedData);
     
         // Redirect to the programs index with a success message
         return redirect()->route('programs.index')->with('success', 'Program created successfully.');
     }
+    
+    
     
     /**
      * Show the form for editing the specified program.
@@ -170,11 +145,14 @@ class ProgramController extends Controller
                         ->where('batchID', $batchID)
                         ->firstOrFail();
     
+        // Authorize the request
         $this->authorize('update', $program);
     
-        // Validate the request input
-        $data = $request->validate([
-            'programID' => 'required|string|max:255|unique:programs,programID,' . $program->programID . ',programID',
+        $user = Auth::user();
+    
+        // Validation rules
+        $rules = [
+            'programID' => 'required|string|max:255|unique:programs,programID,' . $program->programID . ',programID,batchID,' . $program->batchID,
             'programName' => 'required|string|max:255',
             'programSem' => 'required|integer',
             'levelEdu' => 'required|string|in:Diploma,Undergraduate,Postgraduate',
@@ -192,19 +170,28 @@ class ProgramController extends Controller
             'isKompetitif' => 'required|boolean',
             'isBTECH' => 'required|boolean',
             'isOKU' => 'required|boolean',
-        ]);
+        ];
     
-        // Only admins can update the program status
-        if (Auth::user()->hasRole('admin')) {
-            $data['programStatus'] = $request->input('programStatus');
+        // If the user is an admin, include `facultyID` in the validation rules
+        if ($user->hasRole('admin')) {
+            $rules['facultyID'] = 'required|exists:faculty,id';
+        }
+    
+        // Validate the request input
+        $validatedData = $request->validate($rules);
+    
+        // Ensure `facultyID` remains unchanged for non-admin users
+        if (!$user->hasRole('admin')) {
+            unset($validatedData['facultyID']); // Prevent regular users from updating `facultyID`
         }
     
         // Update the program with the validated data
-        $program->update($data);
+        $program->update($validatedData);
     
         // Redirect back to the programs index with a success message
         return redirect()->route('programs.index')->with('success', 'Program updated successfully.');
     }
+    
     
     /**
      * Remove the specified program from the database.
@@ -223,27 +210,30 @@ class ProgramController extends Controller
     {
         $user = Auth::user();
     
-        // Retrieve the programs based on the user role
+        // Check if the user is an admin
         if ($user->hasRole('admin')) {
             // Admins can see all programs grouped by facultyID and batchID
             $programs = Program::where('batchID', $batchID)
-                               ->get()
-                               ->groupBy(['facultyID', 'batchID']);
+                ->with('faculty')
+                ->get()
+                ->groupBy(['facultyID', 'batchID']);
         } elseif ($user->hasRole('faculty')) {
-            // Faculty members can only see their own programs
+            // Faculty members can only see their own faculty's programs
             $programs = Program::where('batchID', $batchID)
-                               ->where('facultyID', $user->id)
-                               ->get()
-                               ->groupBy(['facultyID', 'batchID']);
+                ->where('facultyID', $user->facultyID)
+                ->with('faculty')
+                ->get()
+                ->groupBy(['facultyID', 'batchID']);
         } else {
-            // If the user has no relevant role, return no programs
-            $programs = collect(); // Empty collection
+            // If the user has no relevant role, return an empty collection
+            $programs = collect();
         }
     
         // Fetch additional data if needed
-        $faculties = User::whereHas('roles', function($query) {
+        $faculties = User::whereHas('roles', function ($query) {
             $query->where('type', 'Faculty');
         })->get();
+    
         $batches = Batch::orderBy('batchStartDate', 'desc')->get();
     
         // Render the view with a noProgramsMessage if programs are empty
@@ -252,6 +242,85 @@ class ProgramController extends Controller
         return view('programs.partials.program_list', compact('programs', 'faculties', 'batches', 'noProgramsMessage'));
     }
     
+
+
+    public function updateEntryLevels(Request $request)
+    {
+        $data = $request->input('entry_levels', []);
+        $batchID = $request->get('batch', Batch::latest()->first()->batchID);
+    
+        // Process each program's entry levels
+        foreach ($data as $programID => $categories) {
+            // Remove existing mappings for this program and batch
+            ProgramEntryLevelMapping::where('programID', $programID)
+                ->where('batchID', $batchID)
+                ->delete();
+    
+            // Add new mappings
+            foreach ($categories as $categoryID => $value) {
+                ProgramEntryLevelMapping::create([
+                    'programID' => $programID,
+                    'batchID' => $batchID,
+                    'entry_level_category_id' => $categoryID,
+                    'is_offered' => true,
+                ]);
+            }
+        }
+    
+        return redirect()->route('programs.manage_entry_levels', ['batch' => $batchID])
+            ->with('success', 'Entry levels updated successfully!');
+    }
+    
+
+    public function manageEntryLevels(Request $request)
+    {
+        $user = auth()->user();
+    
+        // Get the selected batch or default to the latest
+        $selectedBatch = $request->get('batch', Batch::latest()->first()->batchID);
+    
+        $selectedFaculty = null; // Initialize the variable for all users
+    
+        // Fetch programs based on user role
+        if ($user->hasRole('admin')) {
+            // Admin: Fetch all programs and filter by faculty if selected
+            $selectedFaculty = $request->get('faculty', null);
+            $programs = Program::where('batchID', $selectedBatch)
+                ->when($selectedFaculty, function ($query, $selectedFaculty) {
+                    return $query->where('facultyID', $selectedFaculty);
+                })
+                ->get();
+        } else {
+            // Faculty: Fetch programs belonging to their faculty
+            $programs = Program::where('batchID', $selectedBatch)
+                ->where('facultyID', $user->facultyID)
+                ->get();
+        }
+    
+        // Fetch all entry-level categories
+        $categories = EntryLevelCategory::all();
+    
+        // Fetch current program-entry level mappings
+        $programEntryLevels = ProgramEntryLevelMapping::where('batchID', $selectedBatch)
+            ->get()
+            ->groupBy('programID');
+    
+        // Fetch all batches for the dropdown
+        $batches = Batch::all();
+    
+        // Fetch all faculties for filtering (for admins)
+        $faculties = Faculty::all(); // Adjust the model if your faculties are stored differently
+    
+        return view('programs.manage_entry_levels', compact(
+            'programs',
+            'categories',
+            'programEntryLevels',
+            'batches',
+            'selectedBatch',
+            'faculties',
+            'selectedFaculty' // Always include this variable, even if null
+        ));
+    }
     
     
 
