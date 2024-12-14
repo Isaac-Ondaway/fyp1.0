@@ -12,16 +12,28 @@
             @method('PATCH')
 
             <!-- Basic Information -->
+            <!-- Program ID -->
             <div class="mb-4">
                 <label for="programID" class="block text-gray-300 font-bold mb-2">Program ID:</label>
-                <input type="text" id="programID" name="programID" value="{{ old('programID', $program->programID) }}" class="form-input rounded-md shadow-sm w-full bg-gray-700 text-gray-100" readonly required>
-                <input type="hidden" name="programID" value="{{ $program->programID }}">
+                <input type="text" id="programID" name="programID"
+                    value="{{ old('programID', $program->programID) }}"
+                    class="form-input rounded-md shadow-sm w-full bg-gray-700 text-gray-100"
+                    {{ Auth::user()->hasRole('admin') ? 'disabled' : '' }} required>
+                @if(Auth::user()->hasRole('admin'))
+                    <input type="hidden" name="programID" value="{{ $program->programID }}">
+                @endif
             </div>
 
+            <!-- Batch ID -->
             <div class="mb-4">
                 <label for="batchID" class="block text-gray-300 font-bold mb-2">Batch ID:</label>
-                <input type="text" id="batchID" name="batchID" value="{{ old('batchID', $program->batchID) }}" class="form-input rounded-md shadow-sm w-full bg-gray-700 text-gray-100" readonly required>
-                <input type="hidden" name="batchID" value="{{ $program->batchID }}">
+                <input type="text" id="batchID" name="batchID"
+                    value="{{ old('batchID', $program->batchID) }}"
+                    class="form-input rounded-md shadow-sm w-full bg-gray-700 text-gray-100"
+                    {{ Auth::user()->hasRole('admin') ? 'disabled' : '' }} required>
+                @if(Auth::user()->hasRole('admin'))
+                    <input type="hidden" name="batchID" value="{{ $program->batchID }}">
+                @endif
             </div>
 
             <div class="mb-4">
@@ -29,9 +41,13 @@
                 <input type="text" id="facultyName" name="facultyName" value="{{ old('facultyName', $program->faculty->name) }}" class="form-input rounded-md shadow-sm w-full bg-gray-700 text-gray-100" readonly>
             </div>
 
+            <!-- Program Name -->
             <div class="mb-4">
                 <label for="programName" class="block text-gray-300 font-bold mb-2">Program Name:</label>
-                <input type="text" id="programName" name="programName" value="{{ old('programName', $program->programName) }}" class="form-input rounded-md shadow-sm w-full bg-gray-700 text-gray-100" {{ Auth::user()->hasRole('admin') ? 'readonly' : '' }} required>
+                <input type="text" id="programName" name="programName"
+                    value="{{ old('programName', $program->programName) }}"
+                    class="form-input rounded-md shadow-sm w-full bg-gray-700 text-gray-100"
+                    {{ Auth::user()->hasRole('admin') ? 'disabled' : '' }} required>
                 @if(Auth::user()->hasRole('admin'))
                     <input type="hidden" name="programName" value="{{ $program->programName }}">
                 @endif
@@ -42,9 +58,13 @@
                 <input type="text" id="studyProgram" name="studyProgram" value="{{ old('studyProgram', $program->studyProgram) }}" class="form-input rounded-md shadow-sm w-full bg-gray-700 text-gray-100" required>
             </div>
 
+            <!-- Program Sem -->
             <div class="mb-4">
                 <label for="programSem" class="block text-gray-300 font-bold mb-2">Total Semesters:</label>
-                <input type="number" id="programSem" name="programSem" value="{{ old('programSem', $program->programSem) }}" class="form-input rounded-md shadow-sm w-full bg-gray-700 text-gray-100" {{ Auth::user()->hasRole('admin') ? 'readonly' : '' }} required>
+                <input type="number" id="programSem" name="programSem"
+                    value="{{ old('programSem', $program->programSem) }}"
+                    class="form-input rounded-md shadow-sm w-full bg-gray-700 text-gray-100"
+                    {{ Auth::user()->hasRole('admin') ? 'disabled' : '' }} required>
                 @if(Auth::user()->hasRole('admin'))
                     <input type="hidden" name="programSem" value="{{ $program->programSem }}">
                 @endif
@@ -102,24 +122,33 @@
                 @endforeach
             </div>
 
-            <!-- Program Fee and Description at the Bottom, Side by Side -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                    <label for="programFee" class="block text-gray-300 font-bold mb-2">Program Fee:</label>
-                    <textarea id="programFee" name="programFee" class="form-textarea rounded-md shadow-sm w-full bg-gray-700 text-gray-100" rows="6" style="min-height: 150px;" {{ Auth::user()->hasRole('admin') ? 'readonly' : '' }}>{{ old('programFee', $program->programFee) }}</textarea>
-                    @if(Auth::user()->hasRole('admin'))
-                        <input type="hidden" name="programFee" value="{{ $program->programFee }}">
-                    @endif
-                </div>
-
-                <div>
-                    <label for="programDesc" class="block text-gray-300 font-bold mb-2">Program Description:</label>
-                    <textarea id="programDesc" name="programDesc" class="form-textarea rounded-md shadow-sm w-full bg-gray-700 text-gray-100" rows="6" style="min-height: 150px;" {{ Auth::user()->hasRole('admin') ? 'readonly' : '' }}>{{ old('programDesc', $program->programDesc) }}</textarea>
-                    @if(Auth::user()->hasRole('admin'))
-                        <input type="hidden" name="programDesc" value="{{ $program->programDesc }}">
-                    @endif
-                </div>
+        <!-- Program Fee and Description at the Bottom, Side by Side -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+                <label for="programFee" class="block text-gray-300 font-bold mb-2">Program Fee:</label>
+                <textarea id="programFee" name="programFee"
+                    class="form-textarea rounded-md shadow-sm w-full bg-gray-700 text-gray-100"
+                    rows="6"
+                    style="min-height: 150px;"
+                    {{ Auth::user()->hasRole('admin') ? 'disabled' : '' }}>{{ old('programFee', $program->programFee) }}</textarea>
+                @if(Auth::user()->hasRole('admin'))
+                    <input type="hidden" name="programFee" value="{{ $program->programFee }}">
+                @endif
             </div>
+
+            <div>
+                <label for="programDesc" class="block text-gray-300 font-bold mb-2">Program Description:</label>
+                <textarea id="programDesc" name="programDesc"
+                    class="form-textarea rounded-md shadow-sm w-full bg-gray-700 text-gray-100"
+                    rows="6"
+                    style="min-height: 150px;"
+                    {{ Auth::user()->hasRole('admin') ? 'disabled' : '' }}>{{ old('programDesc', $program->programDesc) }}</textarea>
+                @if(Auth::user()->hasRole('admin'))
+                    <input type="hidden" name="programDesc" value="{{ $program->programDesc }}">
+                @endif
+            </div>
+        </div>
+
 
             <!-- Program Status (Admin only) -->
             @if(Auth::user()->hasRole('admin'))

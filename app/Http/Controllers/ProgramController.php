@@ -142,8 +142,8 @@ class ProgramController extends Controller
     {
         // Find the program by programID and batchID
         $program = Program::where('programID', $programID)
-                        ->where('batchID', $batchID)
-                        ->firstOrFail();
+                          ->where('batchID', $batchID)
+                          ->firstOrFail();
     
         // Authorize the request
         $this->authorize('update', $program);
@@ -172,25 +172,32 @@ class ProgramController extends Controller
             'isOKU' => 'required|boolean',
         ];
     
-        // If the user is an admin, include `facultyID` in the validation rules
+        // Add admin-specific validation rules
         if ($user->hasRole('admin')) {
-            $rules['facultyID'] = 'required|exists:faculty,id';
+            $rules['facultyID'] = 'required|exists:faculties,id';
+            $rules['programStatus'] = 'required|in:Pending,Approved,Rejected';
         }
-    
+            
         // Validate the request input
-        $validatedData = $request->validate($rules);
-    
-        // Ensure `facultyID` remains unchanged for non-admin users
+        $validatedData = $request->all();
+        // Ensure `facultyID` is excluded for non-admin users
         if (!$user->hasRole('admin')) {
-            unset($validatedData['facultyID']); // Prevent regular users from updating `facultyID`
+            unset($validatedData['facultyID']);
         }
+        
     
-        // Update the program with the validated data
-        $program->update($validatedData);
-    
-        // Redirect back to the programs index with a success message
-        return redirect()->route('programs.index')->with('success', 'Program updated successfully.');
+        try {
+            // Update the program with the validated data
+            $program->update($validatedData);
+            \Log::info('Program updated successfully.');
+            return redirect()->route('programs.index')->with('success', 'Program updated successfully.');
+        } catch (\Exception $e) {
+            // Log the error and redirect back with an error message
+            \Log::error('Program update failed: ' . $e->getMessage());
+            return back()->withErrors(['error' => 'An error occurred while updating the program.']);
+        }
     }
+    
     
     
     /**
