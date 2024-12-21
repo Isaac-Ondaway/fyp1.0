@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Google\Client;
 use Google\Service\Gmail;
+use Illuminate\Support\Facades\Mail;
 
 class SystemEmailService
 {
@@ -35,19 +36,20 @@ class SystemEmailService
 
     public function sendEmail($to, $subject, $body)
     {
-        $gmail = new Gmail($this->client);
-        $message = new \Google\Service\Gmail\Message();
-
-        $rawMessage = "From: umsacademichub@gmail.com\r\n";
-        $rawMessage .= "To: {$to}\r\n";
-        $rawMessage .= "Subject: {$subject}\r\n\r\n";
-        $rawMessage .= "{$body}";
-
-        $encodedMessage = base64_encode($rawMessage);
-        $encodedMessage = str_replace(['+', '/', '='], ['-', '_', ''], $encodedMessage);
-
-        $message->setRaw($encodedMessage);
-
-        return $gmail->users_messages->send('me', $message);
+        try {
+            // Use Laravel Mail to send the email
+            \Mail::raw($body, function ($message) use ($to, $subject) {
+                $message->to($to)
+                        ->subject($subject)
+                        ->from(config('mail.from.address'), config('mail.from.name'));
+            });
+    
+            return 'Email sent successfully.';
+        } catch (\Exception $e) {
+            // Log the error for debugging
+            \Log::error('Email Sending Error: ' . $e->getMessage());
+            throw new \Exception('Failed to send email: ' . $e->getMessage());
+        }
     }
+    
 }
