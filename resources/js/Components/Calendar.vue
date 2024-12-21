@@ -8,24 +8,152 @@
       Grant Google Calendar Access
     </button>
   </div>
+
+  <!-- FullCalendar Component -->
   <FullCalendar :key="calendarKey" ref="fullCalendar" :options="calendarOptions" />
+
+<!-- Vue-controlled Modal -->
+<div
+  v-if="isModalOpen"
+  class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50"
+>
+  <!-- Modal Content -->
+  <div
+    class="bg-white rounded-lg shadow-2xl max-w-lg mx-auto p-6"
+    style="border: 1px solid #e2e8f0;"
+  >
+    <!-- Modal Header -->
+    <div class="flex justify-between items-center border-b pb-4 mb-4">
+      <h2 class="text-2xl font-bold text-gray-800">Add New Event</h2>
+      <button
+        @click="closeModal"
+        class="text-gray-600 hover:text-gray-900 text-3xl font-bold"
+        aria-label="Close"
+      >
+        &times;
+      </button>
+    </div>
+
+    <!-- Modal Body -->
+    <form @submit.prevent="saveEvent">
+      <div class="space-y-4">
+        <!-- Title -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Title</label>
+          <input
+            type="text"
+            v-model="eventForm.title"
+            class="w-full border-gray-300 rounded-md shadow-sm p-2 text-gray-800 focus:ring focus:ring-blue-200"
+            placeholder="Enter event title"
+            required
+          />
+        </div>
+
+        <!-- Description -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Description</label>
+          <textarea
+            v-model="eventForm.description"
+            class="w-full border-gray-300 rounded-md shadow-sm p-2 text-gray-800 focus:ring focus:ring-blue-200"
+            rows="3"
+            placeholder="Enter event description"
+          ></textarea>
+        </div>
+
+        <!-- Start Date -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Start Date</label>
+          <input
+            type="datetime-local"
+            v-model="eventForm.start_datetime"
+            class="w-full border-gray-300 rounded-md shadow-sm p-2 text-gray-800 focus:ring focus:ring-blue-200"
+            required
+          />
+        </div>
+
+        <!-- End Date -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700">End Date</label>
+          <input
+            type="datetime-local"
+            v-model="eventForm.end_datetime"
+            class="w-full border-gray-300 rounded-md shadow-sm p-2 text-gray-800 focus:ring focus:ring-blue-200"
+            required
+          />
+        </div>
+
+        <!-- Event Color -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Event Color</label>
+          <input
+            type="color"
+            v-model="eventForm.color"
+            class="w-16 h-10 border-gray-300 rounded-md"
+          />
+        </div>
+
+        <!-- Visibility -->
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Event Visibility</label>
+            <div class="mt-2 flex items-center">
+                <label class="inline-flex items-center">
+                    <input type="radio" v-model="eventForm.visibility" value="public" class="form-radio text-blue-500" />
+                    <span class="ml-2 text-gray-800">Public</span>
+                </label>
+                <label class="inline-flex items-center ml-6 p-2">
+                    <input type="radio" v-model="eventForm.visibility" value="private" class="form-radio text-blue-500" />
+                    <span class="ml-2 text-gray-800">Private</span>
+                </label>
+            </div>
+        </div>
+
+
+        <!-- All Day Checkbox -->
+        <div class="flex items-center">
+          <input
+            type="checkbox"
+            v-model="eventForm.all_day"
+            class="rounded border-gray-300 focus:ring focus:ring-blue-200"
+            id="allDayEvent"
+          />
+          <label for="allDayEvent" class="ml-2 text-sm text-gray-700">All Day Event</label>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="flex justify-end mt-6 border-t pt-4">
+        <button
+          type="button"
+          @click="closeModal"
+          class="px-4 py-2 text-gray-700 bg-gray-300 rounded hover:bg-gray-400"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="ml-2 px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600"
+        >
+          Save Event
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
 </template>
 
 <script>
-import { nextTick, watch } from 'vue';
 import FullCalendar from '@fullcalendar/vue3';
 import dayGridPlugin from '@fullcalendar/daygrid';
-import interactionPlugin from '@fullcalendar/interaction';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import listPlugin from '@fullcalendar/list';
+import interactionPlugin from '@fullcalendar/interaction';
 
 export default {
-  components: {
-    FullCalendar,
-  },
+  components: { FullCalendar },
   data() {
     return {
-      calendarKey: 0, // Initial key
+      calendarKey: 0, // Key for re-rendering calendar
+      isModalOpen: false, // Controls modal visibility
       calendarOptions: {
         plugins: [dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin],
         initialView: 'dayGridMonth',
@@ -34,240 +162,185 @@ export default {
           center: 'title',
           right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth',
         },
-        editable: true,
         selectable: true,
-        events: '/api/google-calendar-events', // Load events from your API directly
+        editable: true,
+        select: this.handleDateSelect, // Open modal when a date is selected
+        eventClick: this.handleEventClick, // Handle event clicks
+        events: [], // Fetched events
+      },
+      eventForm: {
+        title: '',
+        description: '',
+        start_datetime: '',
+        end_datetime: '',
+        color: '#3788d8',
+        visibility: '',
+        all_day: false,
       },
     };
   },
-  async mounted() {
-    // Fetch events from Google Calendar
-    try {
-      const response = await fetch('/api/google-calendar-events');
-      const events = await response.json();
-      
-      // Log events to verify that each event has an `id`
-      console.log("Fetched events:", events);
-
-      if (Array.isArray(events)) {
-        // Map events to FullCalendar format
-        this.calendarOptions.events = events.map(event => ({
-          id: event.id, // Ensure `id` is defined
-          title: event.summary,
-          start: event.start,
-          end: event.end,
-          editable: true,
-        }));
-      } else {
-        console.error('Unexpected response:', events);
-      }
-    } catch (error) {
-      console.error('Error fetching events:', error);
-    }
-  },
-  watch: {
-    'calendarOptions.events': async function () {
-      // Wait until the DOM is updated
-      await nextTick();
-
-      // Access FullCalendar instance and set event handlers
-      const calendar = this.$refs.fullCalendar?.getApi();
-      if (calendar) {
-        calendar.setOption('select', this.handleDateSelect);
-        calendar.setOption('eventClick', this.handleEventClick);
-        calendar.setOption('eventDrop', this.handleEventDrop);
-      }
-    },
+  mounted() {
+    this.refreshEvents();
   },
   methods: {
+    /**
+     * Fetch and merge events from local database and Google Calendar
+     */
     async refreshEvents() {
       try {
-        const response = await fetch('/api/google-calendar-events');
-        const events = await response.json();
+        const [localResponse, googleResponse] = await Promise.allSettled([
+          fetch('/events/fetch'),
+          fetch('/api/google-calendar-events'),
+        ]);
 
-        if (Array.isArray(events)) {
-          this.calendarOptions.events = events.map(event => ({
-            id: event.id,
-            title: event.summary,
-            start: event.start,
-            end: event.end,
-            editable: true,
-          }));
-          
-          // Force calendar re-render
-          this.calendarKey += 1;
-        } else {
-          console.error('Unexpected response format:', events);
-        }
-      } catch (error) {
-        console.error('Error fetching events:', error);
-      }
-    },
+        let localEvents = [];
+        let googleEvents = [];
 
-
-    grantGoogleAccess() {
-      // Redirect to the backend route for Google OAuth
-      window.location.href = '/auth/google-calendar';
-    },
-    async handleDateSelect(info) {
-      const title = prompt('Enter event title:');
-      if (title) {
-    const startDate = new Date(info.startStr);
-    let endDate = new Date(info.endStr || info.startStr);
-
-    // Set default start time at 9:00 AM if missing
-    if (startDate.getHours() === 0 && startDate.getMinutes() === 0) {
-      startDate.setHours(9, 0);
-    }
-
-    // Adjust the end date to avoid adding an extra day
-    if (info.view.type === 'dayGridMonth' && startDate.toDateString() !== endDate.toDateString()) {
-      // Set end date to one day before if in month view and it’s a multi-day range
-      endDate.setDate(endDate.getDate() - 1);
-      endDate.setHours(17, 0); // Set end time to 5:00 PM
-    } else if (endDate.getHours() === 0 && endDate.getMinutes() === 0) {
-      // Otherwise, set a default end time if only a single day is selected
-      endDate.setHours(17, 0);
-    }
-
-    const event = {
-      title,
-      start: startDate.toISOString(),
-      end: endDate.toISOString(),
-    };
-      // Save the event to Google Calendar through your Laravel API
-      try {
-          const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-          const response = await fetch('/api/google-calendar-events', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json',  
-            'X-CSRF-TOKEN': csrfToken, // Include CSRF token
-          },
-            body: JSON.stringify(event),
-          });
-
-         const savedEvent = await response.json();
-         console.log('Saved Event:', savedEvent);
-         if (response.ok) {
-            await this.refreshEvents();  // Refresh events to include the new event
-          } else {
-            console.error('Failed to save event to Google Calendar');
-          }
-        } catch (error) {
-          console.error('Error saving event to Google Calendar:', error);
-        } 
-  }
-},
-    handleEventClick(info) {
-      const event = info.event;
-      const isDelete = confirm(`Event: ${event.title}\nStart: ${event.start}\nEnd: ${event.end}\n\nDo you want to delete this event?`);
-      if (isDelete) {
-            this.deleteEventInGoogle(event.id);
-        }
-    },
-    async deleteEventInGoogle(eventId) {
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-    try {
-        const response = await fetch(`/api/google-calendar-events/${eventId}`, {
-            method: 'DELETE',
-            headers: { 
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': csrfToken 
-            },
-        });
-
-        if (!response.ok) throw new Error('Failed to delete event');
-
-        // Remove the event from FullCalendar's events array
-        this.calendarOptions.events = this.calendarOptions.events.filter(e => e.id !== eventId);
-
-        // Optional: Re-render the calendar to ensure the event is removed
-        this.$refs.fullCalendar.getApi().render();
-
-        alert('Event deleted successfully');
-    } catch (error) {
-        console.error('Error deleting event from Google:', error);
-        alert('Failed to delete event');
-    }
-},
-
-    async handleEventDrop(info) {
-      const event = info.event;
-      console.log(event.id)
-      console.log("Event start time:", event.start); // Debugging
-      console.log("Event end time:", event.end); // Debugging
-      // Check if `id` is defined before making the request
-      if (!event.id) {
-        console.error('Event id is undefined. Cannot update event.');
-        alert('Error: Event id is missing. Please try again.');
-        info.revert();
-        return;
-      }
-
-      if (confirm(`Save changes to event "${event.title}"?`)) {
-        try {
-          await this.updateEventInGoogle(event);
-          alert('Event updated successfully');
-        } catch (error) {
-          console.error('Error updating event on Google:', error);
-          alert('Failed to save event changes');
-          info.revert(); // Revert on error
-        }
-      } else {
-        info.revert(); // Revert if the user cancels
-      }
-    },
-    async saveEventToGoogle(event) {
-      try {
-        const response = await fetch('/api/google-calendar-events', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+        if (localResponse.status === 'fulfilled') {
+          const data = await localResponse.value.json();
+          console.log("Local Events Data:", data);
+          localEvents = data.map(event => ({
+            id: `local-${event.id}`,
             title: event.title,
             start: event.start,
             end: event.end,
-          }),
-        });
-        if (!response.ok) throw new Error('Failed to create event');
-      } catch (error) {
-        console.error('Error saving event to Google:', error);
+            color: event.color || '#3788d8',
+          }));
+        }
+
+        if (googleResponse.status === 'fulfilled') {
+          const googleData = await googleResponse.value.json();
+          console.log("Google Events Data:", googleData);
+      if (Array.isArray(googleData)) {
+        googleEvents = googleData
+  .filter(event => event.start && event.end) // Ensure both start and end exist
+  .map(event => ({
+    id: `google-${event.id}`,
+    title: event.summary || 'No Title',
+    start: event.start, // Use the direct start field
+    end: event.end,     // Use the direct end field
+    color: '#f39c12',
+  }));
+
+        console.log('Mapped Google Events:', googleEvents);
+
+      } else {
+        console.warn('Google events data is not an array or token missing');
       }
-    },
-    async updateEventInGoogle(event) {
-      const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-  try {
-    const response = await fetch(`/api/google-calendar-events/${event.id}`, {
-         method: 'PATCH',  
-         headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': csrfToken // Add CSRF token here
-         },
-         body: JSON.stringify({
-            start: event.start.toISOString(),
-            end: event.end.toISOString(),
-         }),
-    });
-    if (!response.ok) throw new Error('Failed to update event');
-
-    const updatedEvent = await response.json();
-
-    // Update the event directly in the calendar options
-    const eventIndex = this.calendarOptions.events.findIndex(e => e.id === updatedEvent.event.id);
-    if (eventIndex !== -1) {
-      this.calendarOptions.events[eventIndex] = {
-        id: updatedEvent.event.id,
-        title: updatedEvent.event.summary,
-        start: updatedEvent.event.start.dateTime || updatedEvent.event.start.date,
-        end: updatedEvent.event.end.dateTime || updatedEvent.event.end.date,
-      };
-      this.$refs.fullCalendar.getApi().refetchEvents(); // Refresh calendar events
+    } else {
+      console.warn('Skipping Google events due to error:', googleResponse.reason);
     }
+
+    // Merge Local Events Only for now
+    this.calendarOptions.events = [...localEvents, ...googleEvents];
+    console.log('Final Events:', [...localEvents, ...googleEvents]);
+
+    this.calendarKey += 1; // Force re-render
   } catch (error) {
-    console.error('Error updating event on Google:', error);
+    console.error('Unexpected error while fetching events:', error);
   }
 },
 
-}
+    /**
+     * Handle date selection and open modal
+     */
+    handleDateSelect(info) {
+
+      const formatDateTimeLocal = (date) => {
+    // Convert Date object to YYYY-MM-DDTHH:MM format
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+      this.eventForm = {
+        title: '',
+        description: '',
+        start_datetime: formatDateTimeLocal(info.start),
+        end_datetime: formatDateTimeLocal(info.end),
+
+        color: '#3788d8',
+        visibility: 'public',
+        all_day: false,
+      };
+
+      // Open the modal
+      this.isModalOpen = true;
+    },
+
+    /**
+     * Close modal
+     */
+    closeModal() {
+      this.isModalOpen = false;
+    },
+
+    /**
+     * Save event
+     */
+    async saveEvent() {
+      try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const response = await fetch('/events/store', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+          },
+          body: JSON.stringify(this.eventForm),
+        });
+
+        if (response.ok) {
+          await this.refreshEvents();
+          this.isModalOpen = false; // Close modal after saving
+          alert('Event saved successfully!');
+        } else {
+          console.error('Failed to save event');
+        }
+      } catch (error) {
+        console.error('Error saving event:', error);
+      }
+    },
+
+    /**
+     * Handle event click (for deleting an event)
+     */
+    async handleEventClick(info) {
+      if (confirm(`Delete event: ${info.event.title}?`)) {
+        const isLocalEvent = info.event.id.startsWith('local-');
+        const eventId = info.event.id.replace(/^(local-|google-)/, '');
+
+        try {
+          const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+          const url = isLocalEvent
+            ? `/events/delete/${eventId}`
+            : `/api/google-calendar-events/${eventId}`;
+
+          const response = await fetch(url, {
+            method: 'DELETE',
+            headers: { 'X-CSRF-TOKEN': csrfToken },
+          });
+
+          if (response.ok) {
+            await this.refreshEvents();
+            alert('Event deleted successfully!');
+          } else {
+            console.error('Failed to delete event.');
+          }
+        } catch (error) {
+          console.error('Error deleting event:', error);
+        }
+      }
+    },
+
+    grantGoogleAccess() {
+      window.location.href = '/auth/google-calendar';
+    },
+  },
 };
 </script>
 
@@ -276,4 +349,5 @@ export default {
   max-width: 900px;
   margin: 0 auto;
 }
+
 </style>

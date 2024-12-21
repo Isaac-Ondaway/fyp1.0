@@ -3,7 +3,6 @@
     window.PUSHER_APP_KEY = "{{ env('PUSHER_APP_KEY') }}";
     window.PUSHER_APP_CLUSTER = "{{ env('PUSHER_APP_CLUSTER') }}";
 </script>
-
 <script src="https://cdn.jsdelivr.net/npm/pusher-js@7.2.0/dist/web/pusher.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.11.1/dist/echo.iife.min.js"></script>
 
@@ -52,6 +51,7 @@
                             <strong>Google Account Synced:</strong> None
                         </div>
                     @endif
+
                         <!-- Calendar Component -->
                         <div id="app">
                             <calendar-component></calendar-component>

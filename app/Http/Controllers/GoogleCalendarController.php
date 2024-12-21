@@ -109,7 +109,7 @@ class GoogleCalendarController extends Controller
         try {
             $user = Auth::user();
             $accessToken = json_decode($user->google_access_token, true);
-    
+
             if (!$accessToken) {
                 return response()->json(['error' => 'Access token not found'], 401);
             }
@@ -208,66 +208,98 @@ class GoogleCalendarController extends Controller
     
 
 
-    public function createEvent(Request $request)
-    {
-        \Log::info('Starting event creation process');
+    // public function createEvent(Request $request)
+    // {
+    //     \Log::info('Starting event creation process');
     
-        // Check if user and access token exist
-        $user = Auth::user();
-        if (!$user || !$user->google_access_token) {
-            \Log::error('Google access token not found or user not authenticated');
-            return response()->json(['error' => 'Google access token not found or user not authenticated'], 401);
-        }
+    //     // Check if user and access token exist
+    //     $user = Auth::user();
+    //     \Log::info('Authenticated User:', ['user' => $user]);
     
-        // Set up Google Client
-        $accessToken = json_decode($user->google_access_token, true);
-        $this->client->setAccessToken($accessToken);
+    //     if (!$user || !$user->google_access_token) {
+    //         \Log::error('Google access token not found or user not authenticated');
+    //         return response()->json(['error' => 'Google access token not found or user not authenticated'], 401);
+    //     }
     
-        // Check if the token is expired and refresh if necessary
-        if ($this->client->isAccessTokenExpired()) {
-            $refreshToken = $user->google_refresh_token;
-            if ($refreshToken) {
-                $newAccessToken = $this->client->fetchAccessTokenWithRefreshToken($refreshToken);
-                $this->client->setAccessToken($newAccessToken);
-                $user->google_access_token = json_encode($newAccessToken);
-                $user->google_token_expires_at = now()->addSeconds($newAccessToken['expires_in']);
-                $user->save();
-            } else {
-                return response()->json(['error' => 'No refresh token available'], 403);
-            }
-        }
+    //     // Set up Google Client
+    //     $accessToken = json_decode($user->google_access_token, true);
+    //     $this->client->setAccessToken($accessToken);
     
-        try {
-            // Set up Google Calendar Service
-            $service = new \Google_Service_Calendar($this->client);
-            $calendarId = 'primary';
+    //     // Check if the token is expired and refresh if necessary
+    //     if ($this->client->isAccessTokenExpired()) {
+    //         $refreshToken = $user->google_refresh_token;
+    //         if ($refreshToken) {
+    //             $newAccessToken = $this->client->fetchAccessTokenWithRefreshToken($refreshToken);
+    //             $this->client->setAccessToken($newAccessToken);
+    //             $user->google_access_token = json_encode($newAccessToken);
+    //             $user->google_token_expires_at = now()->addSeconds($newAccessToken['expires_in']);
+    //             $user->save();
+    //             \Log::info('Access token refreshed successfully');
+    //         } else {
+    //             \Log::error('No refresh token available');
+    //             return response()->json(['error' => 'No refresh token available'], 403);
+    //         }
+    //     }
     
-            // Create a new Google Calendar event
-            $event = new \Google_Service_Calendar_Event([
-                'summary' => $request->title,
-                'start' => [
-                    'dateTime' => $request->start,
-                    'timeZone' => 'Asia/Kuala_Lumpur', // Set your timezone here
-                ],
-                'end' => [
-                    'dateTime' => $request->end,
-                    'timeZone' => 'Asia/Kuala_Lumpur', // Set your timezone here
-                ],
-            ]);
+    //     try {
+    //         // Set up Google Calendar Service
+    //         $service = new \Google_Service_Calendar($this->client);
+    //         $calendarId = 'primary';
     
-            // Insert the event into Google Calendar
-            $createdEvent = $service->events->insert($calendarId, $event);
-            \Log::info('Event created successfully: ' . json_encode($createdEvent));
+    //         // Validate and format event data
+    //         $startDateTime = $request->input('start_datetime');
+    //         $endDateTime = $request->input('end_datetime');
     
-            return response()->json(['success' => true, 'event' => $createdEvent]);
-        } catch (\Google_Service_Exception $e) {
-            \Log::error('Google API error: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to create event in Google Calendar: ' . $e->getMessage()], 500);
-        } catch (\Exception $e) {
-            \Log::error('General error: ' . $e->getMessage());
-            return response()->json(['error' => 'General error: ' . $e->getMessage()], 500);
-        }
-    }
+    //         if (!$startDateTime || !$endDateTime) {
+    //             \Log::error('Start or end datetime missing in request.');
+    //             return response()->json(['error' => 'Start or end datetime is missing'], 422);
+    //         }
+    
+    //         // Create a new Google Calendar event
+    //         $event = new \Google_Service_Calendar_Event([
+    //             'summary' => $request->input('title', 'No Title'),
+    //             'description' => $request->input('description', ''),
+    //             'start' => [
+    //                 'dateTime' => $startDateTime,
+    //                 'timeZone' => 'Asia/Kuala_Lumpur',
+    //             ],
+    //             'end' => [
+    //                 'dateTime' => $endDateTime,
+    //                 'timeZone' => 'Asia/Kuala_Lumpur',
+    //             ],
+    //         ]);
+    
+    //         // Insert the event into Google Calendar
+    //         $createdEvent = $service->events->insert($calendarId, $event);
+    
+    //         // Log the response and check for ID
+    //         \Log::info('Google Calendar API Response:', ['response' => $createdEvent]);
+    
+    //         if (!isset($createdEvent->id)) {
+    //             \Log::error('Google Calendar API did not return an event ID.', ['response' => $createdEvent]);
+    //             return response()->json(['error' => 'Failed to create event: Google API did not return an ID'], 500);
+    //         }
+    
+    //         \Log::info('Event created successfully with ID: ' . $createdEvent->id);
+    
+    //         return response()->json([
+    //             'success' => true,
+    //             'event' => [
+    //                 'id' => $createdEvent->id,
+    //                 'summary' => $createdEvent->getSummary(),
+    //                 'start' => $createdEvent->getStart(),
+    //                 'end' => $createdEvent->getEnd(),
+    //             ],
+    //         ]);
+    //     } catch (\Google_Service_Exception $e) {
+    //         \Log::error('Google API error: ' . $e->getMessage());
+    //         return response()->json(['error' => 'Google Calendar API error: ' . $e->getMessage()], 500);
+    //     } catch (\Exception $e) {
+    //         \Log::error('General error: ' . $e->getMessage());
+    //         return response()->json(['error' => 'General error: ' . $e->getMessage()], 500);
+    //     }
+    // }
+    
     
     public function deleteEvent($id)
     {

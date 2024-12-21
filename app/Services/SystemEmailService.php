@@ -24,9 +24,13 @@ class SystemEmailService
         $this->client->setAccessToken($accessToken);
 
         if ($this->client->isAccessTokenExpired()) {
+            if (!$this->client->getRefreshToken()) {
+                throw new \Exception('Refresh token is missing. Re-authenticate to generate a new token.');
+            }
             $this->client->fetchAccessTokenWithRefreshToken($this->client->getRefreshToken());
             file_put_contents($tokenPath, json_encode($this->client->getAccessToken()));
         }
+        
     }
 
     public function sendEmail($to, $subject, $body)
