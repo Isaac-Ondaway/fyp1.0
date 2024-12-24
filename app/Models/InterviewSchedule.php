@@ -19,7 +19,8 @@ class InterviewSchedule extends Model
         'batch_id',
         'scheduled_date',
         'remarks',
-        'status'
+        'status',
+        'venue',
         ];
 
         protected $casts = [

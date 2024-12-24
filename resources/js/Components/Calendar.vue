@@ -349,5 +349,53 @@ export default {
   max-width: 900px;
   margin: 0 auto;
 }
+</style>
+
+<style>
+/* General list view event rows */
+.fc-list-event {
+    background-color: #2d3748 !important; /* Dark gray background for event rows */
+    color: #e2e8f0 !important; /* Light text for event rows */
+    border-bottom: 1px solid #374151; /* Border between events */
+}
+
+/* Hover effect for entire event rows */
+.fc-list-event:hover {
+    background-color: rgb(233, 100, 12) !important; /* Highlighted background on hover */
+    color: rgb(14, 1, 1) !important; /* Default text color for row on hover */
+}
+
+/* Ensure title text changes to black on hover */
+.fc-list-event:hover .fc-list-item-title {
+    color: rgb(14, 1, 1) !important; /* Black text for event title on hover */
+}
+
+/* Ensure time text retains styling */
+.fc-list-item-time {
+    font-weight: bold;
+    color: #63b3ed !important; /* Light blue for time */
+}
+
+/* Ensure title text retains styling */
+.fc-list-item-title {
+    font-size: 1rem;
+    color: #ffffff !important; /* White for event title */
+}
+
+/* Fix for date text inside the header */
+.fc-list-day-cushion {
+    color: rgb(19, 1, 1) !important; /* Ensure date text in headers is dark */
+}
+
+/* Adjust event content alignment */
+.fc-list-event > td {
+    vertical-align: middle;
+}
+
+/* Highlight fixes for list view */
+.fc-highlight {
+    background-color: #374151 !important; /* Highlighted rows visible */
+    color: #ffffff !important; /* Text remains visible */
+}
 
 </style>

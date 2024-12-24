@@ -44,7 +44,7 @@ class InterviewScheduleController extends Controller
         $batches = Batch::all();
         $programs = Program::all();
     
-        return view('interviews-schedule.index', compact('events', 'batches', 'programs'));
+        return view('interviews-schedule.index', compact('events', 'batches', 'programs','schedules'));
     }
     
     /**
@@ -77,6 +77,7 @@ class InterviewScheduleController extends Controller
             'batch_id' => 'required|integer',
             'scheduled_date'   => 'required|date_format:Y-m-d H:i',
             'remarks' => 'nullable|string',
+            'venue' => 'required|string',
             'status' => 'required|in:Pending,Scheduled,Attended,Absent',
         ]);
     
@@ -91,6 +92,7 @@ class InterviewScheduleController extends Controller
                 'scheduled_date' => $request->scheduled_date,
                 'remarks' => $request->remarks,
                 'status' => $request->status ?? 'Scheduled',
+                'venue' =>$request->venue,
             ]
         );
     
@@ -137,19 +139,19 @@ class InterviewScheduleController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            'scheduled_date' => 'required|date_format:Y-m-d H:i',
             'remarks' => 'nullable|string',
-            'status' => 'required|in:Pending,Scheduled,Attended,Absent',
+            'status' => 'required|in:Pending,Scheduled,Attended,Absent,Accepted,Rejected',
+            'venue' => 'required|string',
         ]);
 
         $schedule = InterviewSchedule::findOrFail($id);
         $schedule->update([
-            'scheduled_date' => $request->input('scheduled_date'),
             'remarks' => $request->input('remarks'),
             'status' => $request->input('status'),
+            'venue' => $request->input('venue'),
         ]);
 
-        return redirect()->route('interviews-schedule.index')->with('status', 'Interview schedule updated successfully');
+        return redirect()->route('interviews-schedule.index')->with('success', 'Interview schedule updated successfully');
     }
 
     /**
@@ -162,7 +164,7 @@ class InterviewScheduleController extends Controller
         $schedule = InterviewSchedule::findOrFail($id);
         $schedule->delete();
 
-        return redirect()->route('interviews-schedule.index')->with('status', 'Interview schedule deleted successfully');
+        return redirect()->route('interviews-schedule.index')->with('success', 'Interview schedule deleted successfully');
     }
 
     public function getEventsForDate(Request $request)
@@ -177,6 +179,7 @@ class InterviewScheduleController extends Controller
         // Format the data to be sent to the frontend
         $events = $schedules->map(function ($schedule) {
             return [
+                'schedule_id' => $schedule->schedule_id,
                 'title' => $schedule->interviewee->intervieweeName,
                 'time' => $schedule->scheduled_date->format('H:i'),
                 'scheduled_date' => $schedule->scheduled_date->format('Y-m-d H:i'),
@@ -184,6 +187,8 @@ class InterviewScheduleController extends Controller
                 'status' => $schedule->status,
                 'remarks' => $schedule->remarks,
                 'email' => $schedule->interviewee->email,
+                'venue' => $schedule->venue,
+                'contactNumber' => $schedule->interviewee->contactNumber,
             ];
         });
 

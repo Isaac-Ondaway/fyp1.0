@@ -17,7 +17,7 @@ class Interview extends Model
         'batchID',
         'intervieweeName',
         'contactNumber',
-        'email'
+        'email',
     ];
 
     /**

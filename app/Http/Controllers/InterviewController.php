@@ -113,7 +113,7 @@ class InterviewController extends Controller
             'batchID' => 'required|integer',
             'interviewees.*.intervieweeName' => 'required|string|max:255',
             'interviewees.*.contactNumber' => 'required|string|max:20',
-            'interviewees.*.email' => 'nullable|email|max:255',
+            'interviewees.*.email' => 'required|email|max:255',
         ]);
 
         foreach ($request->interviewees as $interviewee) {
@@ -156,7 +156,7 @@ class InterviewController extends Controller
                         'batchID' => $row[1],
                         'intervieweeName' => $row[2],
                         'contactNumber' => $row[3],
-                        'email' => $row[4] ?? null,
+                        'email' => $row[4],
                     ]);
                 }
             }
@@ -164,6 +164,12 @@ class InterviewController extends Controller
     
         return redirect()->route('interviews.index')->with('success', 'Interviewees added successfully!');
     }
+
+    public function uploadCsv()
+    {
+        return view('interviews.uploadCsv');
+    }
+
     
     
     
