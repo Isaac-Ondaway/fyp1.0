@@ -10,42 +10,36 @@ use App\Events\MessageSent;
 
 class ChatSessionController extends Controller
 {
-
+    // Get or create a session for the current user
     public function getSessionId()
     {
         $userId = auth()->id();
-    
-        // Debug to ensure user ID is being fetched
-        \Log::info('User ID:', ['userId' => $userId]);
-    
-        // Fetch or create the session
+
         $session = ChatSession::firstOrCreate(['user_id' => $userId]);
-    
-        // Debug to check if the session is created/fetched
-        \Log::info('Chat Session:', ['session' => $session]);
-    
+
         return response()->json(['sessionId' => $session->session_id]);
     }
-    
-    
-    public function store(Request $request)
+
+    // Fetch all chat sessions with the latest message and time
+    public function fetchSessions()
     {
-        $session = ChatSession::firstOrCreate(['user_id' => auth()->id()]);
-        return redirect()->route('chats.show', $session->id);
-    }
-    
-    
-    public function show($id)
-    {
-        $session = ChatSession::findOrFail($id);
-    
-        if (!auth()->user()->hasRole('admin') && $session->user_id !== auth()->id()) {
-            abort(403);
-        }
-    
-        return view('chats.show', compact('session'));
+        $sessions = ChatSession::with(['messages' => function ($query) {
+            $query->latest()->limit(1); // Fetch only the latest message
+        }, 'user'])
+        ->get()
+        ->map(function ($session) {
+            return [
+                'session_id' => $session->id,
+                'user_name' => $session->user->name,
+                'latest_message' => $session->messages->first()?->message ?? 'No messages yet',
+                'latest_time' => $session->messages->first()?->created_at ?? null,
+            ];
+        });
+
+        return response()->json($sessions);
     }
 
+    // Fetch messages for a specific chat session
     public function fetchMessages($sessionId)
     {
         $session = ChatSession::findOrFail($sessionId);
@@ -62,84 +56,70 @@ class ChatSessionController extends Controller
         return response()->json($messages);
     }
 
-    
-
+    // Send a message in a chat session
     public function sendMessage(Request $request, $sessionId)
     {
-    
         $request->validate(['message' => 'required|string|max:1000']);
-    
-        // Check if the session exists
+
         $session = ChatSession::findOrFail($sessionId);
-    
-        // Save the chat message
+
         $chat = Chat::create([
             'session_id' => $sessionId,
             'user_id' => auth()->id(),
             'message' => $request->message,
         ]);
 
-            // Attempt to broadcast the message
-            try {
-                broadcast(new MessageSent($chat))->toOthers();
-                \Log::info('Broadcast successful:', [
-                    'channel' => "chat.{$sessionId}",
-                    'message' => $chat->message,
-                ]);
-            } catch (\Exception $e) {
-                \Log::error('Broadcasting error:', [
-                    'message' => $e->getMessage(),
-                    'stack' => $e->getTraceAsString(),
-                ]);
-                return response()->json(['error' => 'Broadcast failed'], 500);
-            }
-            
-            \Log::info('Broadcasting MessageSent Event:', ['chat' => $chat]);
+        try {
+            broadcast(new MessageSent($chat))->toOthers();
+        } catch (\Exception $e) {
+            Log::error('Broadcasting error:', [
+                'message' => $e->getMessage(),
+                'stack' => $e->getTraceAsString(),
+            ]);
+        }
 
         return response()->json($chat, 201);
     }
-    
-    
+
+    // Admin-specific: Fetch all chat sessions
     public function adminIndex()
     {
-        $chatSessions = ChatSession::with('user')->paginate(10); // Fetch all chat sessions with user details
-        \Log::info('Chat Sessions for Admin:', $chatSessions->toArray());
-
+        $chatSessions = ChatSession::with([
+            'chats' => function ($query) {
+                $query->latest(); // Fetch only the latest message for each session
+            },
+            'user'
+        ])->paginate(10);
+    
         return view('admin.chats.index', compact('chatSessions'));
     }
     
+    
+
+    // Admin-specific: Fetch messages for a specific session
     public function getAdminMessages($sessionId)
     {
         $messages = Chat::where('session_id', $sessionId)
-            ->with('user') // Ensure you load user information
-            ->orderBy('created_at', 'asc') // Sort messages by creation time
+            ->with(['user.roles'])
+            ->orderBy('created_at', 'asc')
             ->get();
-    
+
         return response()->json($messages);
     }
-    
-    
+
+    // Admin-specific: Send a message in a chat session
     public function sendAdminMessage(Request $request, $sessionId)
     {
-        \Log::info('sendAdminMessage called with sessionId:', ['sessionId' => $sessionId]);
-    
-        $validated = $request->validate([
-            'message' => 'required|string|max:1000',
+        $validated = $request->validate(['message' => 'required|string|max:1000']);
+
+        $chat = Chat::create([
+            'session_id' => $sessionId,
+            'user_id' => auth()->id(),
+            'message' => $validated['message'],
         ]);
-    
-        $chat = new Chat();
-        $chat->session_id = $sessionId; // Associate the session ID
-        $chat->user_id = auth()->id(); // Admin's user ID
-        $chat->message = $validated['message'];
-        $chat->save();
-    
-        // Dispatch the event
+
         broadcast(new MessageSent($chat, auth()->user()))->toOthers();
-    
+
         return response()->json($chat);
     }
-    
-
-
-
 }

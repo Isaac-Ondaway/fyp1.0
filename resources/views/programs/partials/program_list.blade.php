@@ -19,7 +19,7 @@
                                         <th class="py-2 px-4">Program Name</th>
                                         <th class="py-2 px-4">Level of Education</th>
                                         <th class="py-2 px-4">Program Status</th>
-                                        <th class="py-2 px-4 text-center">Actions</th>
+                                        <!-- <th class="py-2 px-4 text-center">Actions</th> -->
                                     </tr>
                                 </thead>
                                 <tbody class="bg-gray-800 text-gray-400">
@@ -34,7 +34,7 @@
                                                     {{ ucfirst($program->programStatus) }}
                                                 </span>
                                             </td>                        
-                                            <td class="py-2 px-4 text-center">
+                                            <!-- <td class="py-2 px-4 text-center">
                                                 <a href="{{ route('programs.edit', ['programID' => $program->programID, 'batchID' => $program->batchID]) }}" 
                                                 class="text-white bg-blue-500 hover:bg-blue-700 font-bold py-1 px-3 rounded-lg"
                                                 onclick="event.stopPropagation()">Edit</a>
@@ -44,7 +44,7 @@
                                                     <button type="submit" class="text-white bg-red-500 hover:bg-red-700 font-bold py-1 px-3 rounded-lg"
                                                     onclick="event.stopPropagation()">Delete</button>
                                                 </form>
-                                            </td>
+                                            </td> -->
                                         </tr>
                                     @endforeach
                                 </tbody>
@@ -127,7 +127,15 @@
 
         <!-- Bottom Close Button -->
         <div class="text-right">
-            <button onclick="closeProgramModal()" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">Close</button>
+                                                <a href="{{ route('programs.edit', ['programID' => $program->programID, 'batchID' => $program->batchID]) }}" 
+                                                class="text-white bg-blue-500 hover:bg-blue-700 font-bold py-1 px-3 rounded-lg"
+                                                onclick="event.stopPropagation()">Edit</a>
+                                                <form action="{{ route('programs.destroy', ['programID' => $program->programID, 'batchID' => $program->batchID]) }}" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to delete this program?');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="text-white bg-red-500 hover:bg-red-700 font-bold py-1 px-3 rounded-lg"
+                                                    onclick="event.stopPropagation()">Delete</button>
+                                                </form>
         </div>
     </div>
 </div>

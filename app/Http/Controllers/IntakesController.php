@@ -7,6 +7,7 @@ use App\Models\ProgramEntryLevel;
 use App\Models\Program;
 use App\Models\EntryLevelCategory;
 use App\Models\Batch;
+use App\Models\Faculty;
 use App\Models\EntryLevel;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
@@ -14,40 +15,89 @@ use Illuminate\Support\Facades\Auth;
 
 class IntakesController extends Controller
 {
+    // public function index(Request $request)
+    // {
+    //     $user = Auth::user();
+    //     $selectedBatchID = $request->input('batch_id');
+    
+    //     // Get batches and entry levels
+    //     $batches = Batch::orderBy('batchStartDate', 'desc')->get();
+    //     $entryLevels = EntryLevel::all();
+    
+    //     // Retrieve programs based on user role, selected batch, and approved status
+    //     if ($user->hasRole('admin')) {
+    //         // Admin can see all approved programs
+    //         $programs = Program::where('programStatus', 'Approved')
+    //             ->when($selectedBatchID, function ($query) use ($selectedBatchID) {
+    //                 return $query->where('batchID', $selectedBatchID);
+    //             })->with('faculty') // Add 'faculty' relationship for additional data
+    //             ->get();
+    //     } else {
+    //         // Faculty members can see only their faculty's approved programs
+    //         $programs = Program::where('facultyID', $user->faculty->id) // Adjusted to fetch based on faculty relationship
+    //             ->where('programStatus', 'Approved')
+    //             ->when($selectedBatchID, function ($query) use ($selectedBatchID) {
+    //                 return $query->where('batchID', $selectedBatchID);
+    //             })->with('faculty') // Add 'faculty' relationship for additional data
+    //             ->get();
+    //     }
+    
+    //     // Retrieve existing intake data for each program and entry level
+    //     $existingIntakes = ProgramEntryLevel::where('batch_id', $selectedBatchID)
+    //         ->get()
+    //         ->groupBy('program_id')
+    //         ->mapWithKeys(function ($intakes, $programID) {
+    //             return [$programID => $intakes->keyBy('entry_level_id')->map->intake_count];
+    //         });
+    
+    //     return view('intakes.index', compact('programs', 'batches', 'entryLevels', 'selectedBatchID', 'existingIntakes'));
+    // }
+
     public function index(Request $request)
-    {
-        $user = Auth::user();
-        $selectedBatchID = $request->input('batch_id');
-    
-        // Get batches and entry levels
-        $batches = Batch::all();
-        $entryLevels = EntryLevel::all();
-    
-        // Retrieve programs based on user role and selected batch
-        if ($user->hasRole('admin')) {
-            // Admin can see all programs
-            $programs = Program::when($selectedBatchID, function ($query) use ($selectedBatchID) {
+{
+    $user = Auth::user();
+    $selectedBatchID = $request->input('batch_id');
+    $selectedFacultyID = $request->input('faculty_id'); // New filter for faculty
+
+    // Get batches, faculties, and entry levels
+    $batches = Batch::orderBy('batchStartDate', 'desc')->get();
+    $entryLevels = EntryLevel::all();
+    $faculties = Faculty::all(); // Retrieve all faculties for the filter dropdown
+
+    // Retrieve programs based on user role, selected batch, faculty, and approved status
+    if ($user->hasRole('admin')) {
+        // Admin can see all approved programs
+        $programs = Program::where('programStatus', 'Approved')
+            ->when($selectedBatchID, function ($query) use ($selectedBatchID) {
                 return $query->where('batchID', $selectedBatchID);
-            })->with('faculty')->get(); // Add 'faculty' relationship for additional data
-        } else {
-            // Faculty members can see only their faculty's programs
-            $programs = Program::where('facultyID', $user->faculty->id) // Adjusted to fetch based on faculty relationship
-                ->when($selectedBatchID, function ($query) use ($selectedBatchID) {
-                    return $query->where('batchID', $selectedBatchID);
-                })->with('faculty') // Add 'faculty' relationship for additional data
-                ->get();
-        }
-    
-        // Retrieve existing intake data for each program and entry level
-        $existingIntakes = ProgramEntryLevel::where('batch_id', $selectedBatchID)
-            ->get()
-            ->groupBy('program_id')
-            ->mapWithKeys(function ($intakes, $programID) {
-                return [$programID => $intakes->keyBy('entry_level_id')->map->intake_count];
-            });
-    
-        return view('intakes.index', compact('programs', 'batches', 'entryLevels', 'selectedBatchID', 'existingIntakes'));
+            })
+            ->when($selectedFacultyID, function ($query) use ($selectedFacultyID) {
+                return $query->where('facultyID', $selectedFacultyID);
+            })
+            ->with('faculty') // Add 'faculty' relationship for additional data
+            ->get();
+    } else {
+        // Faculty members can see only their faculty's approved programs
+        $programs = Program::where('facultyID', $user->faculty->id) // Adjusted to fetch based on faculty relationship
+            ->where('programStatus', 'Approved')
+            ->when($selectedBatchID, function ($query) use ($selectedBatchID) {
+                return $query->where('batchID', $selectedBatchID);
+            })
+            ->with('faculty') // Add 'faculty' relationship for additional data
+            ->get();
     }
+
+    // Retrieve existing intake data for each program and entry level
+    $existingIntakes = ProgramEntryLevel::where('batch_id', $selectedBatchID)
+        ->get()
+        ->groupBy('program_id')
+        ->mapWithKeys(function ($intakes, $programID) {
+            return [$programID => $intakes->keyBy('entry_level_id')->map->intake_count];
+        });
+
+    return view('intakes.index', compact('programs', 'batches', 'entryLevels', 'faculties', 'selectedBatchID', 'selectedFacultyID', 'existingIntakes'));
+}
+
     
     
     

@@ -41,10 +41,9 @@
    class="block bg-white p-3 rounded-lg shadow hover:bg-gray-200">
 
                     <div class="flex items-center">
-                        <div class="w-10 h-10 bg-gray-300 rounded-full mr-3"></div>
                         <div>
                             <p class="font-bold">{{ $session->user->name }}</p>
-                            <p class="text-sm text-gray-500">{{ $session->created_at->diffForHumans() }}</p>
+                            <p class="text-sm text-gray-500">{{ $session->chats->first()?->created_at->diffForHumans() ?? 'No messages yet' }}</p>
                         </div>
                     </div>
                 </a>

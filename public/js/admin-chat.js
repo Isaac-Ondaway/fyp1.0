@@ -21,24 +21,39 @@ function loadAdminChat(sessionId) {
     // Fetch messages from the server
     fetch(`/admin/chats/${sessionId}/messages`)
         .then(response => {
-            if (!response.ok) throw new Error('Failed to load chat messages.');
+            if (!response.ok) {
+                throw new Error('Failed to fetch messages');
+            }
             return response.json();
         })
         .then(messages => {
             messages.forEach(chat => {
-                appendMessage(chat.message, chat.user_id === CURRENT_USER_ID, chat.user.name);
-            });
-        })
-        .catch(error => {
-            console.error('Error loading chat messages:', error);
-            chatMessagesContainer.innerHTML = '<p class="text-gray-500">Failed to load messages.</p>';
-        });
+                // Check for admin role (case-insensitive)
+                const isAdmin = chat.user.roles && chat.user.roles.some(role => role.type.toLowerCase() === 'admin');
+                const isCurrentUser = chat.user_id === CURRENT_USER_ID;
 
-    // Ensure listener is set for this session
+                // Debug logs
+                console.log('Message:', chat.message);
+                console.log('Sender:', chat.user.name);
+                console.log('Roles:', chat.user.roles || 'Roles not provided');
+                console.log('isAdmin:', isAdmin, 'isCurrentUser:', isCurrentUser);
+
+                appendMessage(chat.message, isCurrentUser, chat.user.name, isAdmin);
+            });
+
+        })
+        .catch(error => console.error('Error loading chat messages:', error));
+
+    // Set up real-time listener for this session
     window.Echo.private(`chat.${sessionId}`)
         .listen('MessageSent', (e) => {
-            console.log('Message received:', e.message);
-            appendMessage(e.message.message, false, e.user.name);
+            const isAdmin = e.user.roles && e.user.roles.some(role => role.type === 'admin');
+            const isCurrentUser = e.user.id === CURRENT_USER_ID;
+
+            console.log('Realtime Message:', e.message.message);
+            console.log('Sender:', e.user.name, 'Roles:', e.user.roles, 'isAdmin:', isAdmin);
+
+            appendMessage(e.message.message, isCurrentUser, e.user.name, isAdmin);
         });
 }
 
@@ -61,7 +76,7 @@ function sendAdminMessage(event) {
     }
 
     // Append the message locally (optimistic UI)
-    appendMessage(message, true);
+    appendMessage(message, true, 'You', true); // Explicitly mark it as the current admin
 
     // Send the message to the server
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
@@ -90,18 +105,34 @@ function sendAdminMessage(event) {
 
 window.sendAdminMessage = sendAdminMessage;
 
-function appendMessage(message, isUser, sender = 'User') {
+function appendMessage(message, isUser, sender = 'User', isAdmin = false) {
     const messagesContainer = document.getElementById('chat-messages');
 
-    // Create message element
+    // Create container for the message
     const messageDiv = document.createElement('div');
-    messageDiv.classList.add('mb-2', isUser ? 'text-right' : 'text-left');
+    messageDiv.classList.add('mb-2');
 
+    // Add sender's name (only for messages not sent by the current user)
+    if (!isUser) {
+        const senderName = document.createElement('span');
+        senderName.classList.add('block', 'text-sm', 'text-gray-500', 'mb-1');
+        senderName.textContent = sender; // Display the sender's name
+        messageDiv.appendChild(senderName);
+    }
+
+    // Style the chat bubble
     const bubble = document.createElement('div');
     bubble.classList.add('inline-block', 'px-4', 'py-2', 'rounded-lg', 'max-w-xs', 'break-words');
-    bubble.style.backgroundColor = isUser ? '#3b82f6' : '#e5e7eb'; // Blue for admin, gray for user
-    bubble.style.color = isUser ? '#ffffff' : '#000000';
+    bubble.style.backgroundColor = isUser || isAdmin ? '#3b82f6' : '#e5e7eb'; // Blue for admin or user, gray for others
+    bubble.style.color = isUser || isAdmin ? '#ffffff' : '#000000';
     bubble.textContent = message;
+
+    // Align bubble
+    if (isUser || isAdmin) {
+        messageDiv.classList.add('text-right'); // Align admin and current user messages to the right
+    } else {
+        messageDiv.classList.add('text-left'); // Align non-admin user messages to the left
+    }
 
     messageDiv.appendChild(bubble);
     messagesContainer.appendChild(messageDiv);

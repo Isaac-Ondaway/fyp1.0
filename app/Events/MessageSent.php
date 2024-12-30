@@ -48,16 +48,30 @@ class MessageSent implements ShouldBroadcast
      *
      * @return array
      */
+    // public function broadcastWith()
+    // {
+    //     $data = [
+    //         'message' => $this->chat->message,
+    //         'user_id' => $this->chat->user_id,
+    //         'created_at' => $this->chat->created_at->toDateTimeString(),
+    //     ];
+
+    //     \Log::info('Broadcasting Data:', $data);
+
+    //     return $data;
+    // }
+
     public function broadcastWith()
-    {
-        $data = [
-            'message' => $this->chat->message,
-            'user_id' => $this->chat->user_id,
-            'created_at' => $this->chat->created_at->toDateTimeString(),
-        ];
+{
+    return [
+        'message' => $this->chat->message,
+        'user' => [
+            'id' => $this->user->id,
+            'name' => $this->user->name,
+            'roles' => $this->user->roles->pluck('type'), // Include roles
+            'is_admin' => $this->user->hasRole('admin') // Use hasRole
+        ],
+    ];
+}
 
-        \Log::info('Broadcasting Data:', $data);
-
-        return $data;
-    }
 }

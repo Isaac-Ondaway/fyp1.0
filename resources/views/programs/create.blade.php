@@ -12,9 +12,9 @@
             <form action="{{ route('programs.store') }}" method="POST" class="space-y-6">
                 @csrf
 
-                <!-- Program ID -->
+                <!-- Program Code -->
                 <div>
-                    <label for="programID" class="block text-gray-300 font-semibold mb-2">Program ID</label>
+                    <label for="programID" class="block text-gray-300 font-semibold mb-2">Program Code</label>
                     <input type="text" id="programID" name="programID" class="w-full bg-gray-700 text-gray-100 rounded-lg px-4 py-2" required>
                 </div>
 

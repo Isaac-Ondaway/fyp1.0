@@ -7,24 +7,41 @@
     <div class="container mx-auto py-8">
         <h1 class="text-3xl font-extrabold mb-8 text-gray-200">User List</h1>
 
-        <!-- Filter Section -->
-        <form method="GET" action="{{ route('admin.user.list') }}">
-            <div class="flex items-center mb-4 space-x-4">
-                <div class="w-48">
-                    <label for="roleFilter" class="block text-gray-300 font-semibold mb-2">Filter by Role:</label>
-                    <select id="roleFilter" name="roleID" class="form-select w-full rounded-md shadow-sm bg-gray-700 text-gray-100 focus:border-blue-500 focus:ring-blue-500">
-                        <option value="">All Roles</option>
-                        @foreach($roles as $role)
-                            <option value="{{ $role->rolesID }}" {{ $roleID == $role->rolesID ? 'selected' : '' }}>{{ $role->type }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div>
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg mt-6">Apply Filters</button>
-                </div>
+<!-- Filter Section -->
+<form method="GET" action="{{ route('admin.user.list') }}">
+    <div class="flex items-center justify-between mb-4">
+        <!-- Filter Dropdown -->
+        <div class="flex items-center space-x-4">
+            <div class="w-48">
+                <label for="roleFilter" class="block text-gray-300 font-semibold mb-2">Filter by Role:</label>
+                <select id="roleFilter" name="roleID" class="form-select w-full rounded-md shadow-sm bg-gray-700 text-gray-100 focus:border-blue-500 focus:ring-blue-500">
+                    <option value="">All Roles</option>
+                    @foreach($roles as $role)
+                        <option value="{{ $role->rolesID }}" {{ $roleID == $role->rolesID ? 'selected' : '' }}>{{ $role->type }}</option>
+                    @endforeach
+                </select>
             </div>
-        </form>
+
+            <div>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg mt-6">Apply Filters</button>
+            </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="w-1/6">
+            <label for="search-name" class="block text-gray-300 font-semibold mb-2">Search by Name:</label>
+            <input
+                type="text"
+                id="search-name"
+                class="form-input w-full rounded-md shadow-sm bg-gray-700 text-gray-100 focus:border-blue-500 focus:ring-blue-500"
+                placeholder="Search by Name"
+                onkeyup="filterUsers()"
+            />
+        </div>
+    </div>
+</form>
+
+
 
         <!-- User List -->
         <div class="overflow-hidden shadow-lg rounded-lg bg-gray-900">
@@ -90,4 +107,27 @@
 
 
     </div>
+
+<script>
+function filterUsers() {
+    const input = document.getElementById("search-name");
+    const filter = input.value.toLowerCase();
+    const table = document.querySelector("table");
+    const rows = table.getElementsByTagName("tr");
+
+    for (let i = 1; i < rows.length; i++) {
+        const nameCell = rows[i].getElementsByTagName("td")[1]; // Assuming Name is the 2nd column
+        if (nameCell) {
+            const name = nameCell.textContent || nameCell.innerText;
+            if (name.toLowerCase().indexOf(filter) > -1) {
+                rows[i].style.display = "";
+            } else {
+                rows[i].style.display = "none";
+            }
+        }
+    }
+}
+
+</script>
+
 </x-app-layout>

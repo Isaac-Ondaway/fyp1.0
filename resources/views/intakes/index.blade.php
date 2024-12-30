@@ -9,25 +9,40 @@
         <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
             <h3 class="text-3xl font-bold mb-8 text-white mb-4">Manage Intakes</h3>
             
-            <!-- Batch Selection -->
+            <!-- Filters -->
             <div class="flex items-center mb-4 space-x-4">
+                <!-- Batch Selection -->
                 <div class="w-48">
                     <label for="batch" class="block text-gray-300 font-semibold mb-2">Select Batch:</label>
-                    <form id="batchForm" action="{{ route('intakes.index') }}" method="GET">
-                        <select name="batch_id" id="batch" class="form-select w-full rounded-md shadow-sm bg-gray-700 text-gray-100 focus:border-blue-500 focus:ring-blue-500" onchange="document.getElementById('batchForm').submit()">
+                    <form id="filtersForm" action="{{ route('intakes.index') }}" method="GET">
+                        <select name="batch_id" id="batch" class="form-select w-full rounded-md shadow-sm bg-gray-700 text-gray-100 focus:border-blue-500 focus:ring-blue-500" onchange="document.getElementById('filtersForm').submit()">
                             <option value="" disabled {{ $selectedBatchID ? '' : 'selected' }}>Choose a Batch</option>
                             @foreach($batches as $batch)
                                 <option value="{{ $batch->batchID }}" {{ $selectedBatchID == $batch->batchID ? 'selected' : '' }}>{{ $batch->batchName }}</option>
                             @endforeach
                         </select>
-                    </form>
                 </div>
+
+                <!-- Faculty Selection -->
+                @if(Auth::user()->hasRole('admin'))
+                <div class="w-48">
+                    <label for="faculty" class="block text-gray-300 font-semibold mb-2">Select Faculty:</label>
+                    <select name="faculty_id" id="faculty" class="form-select w-full rounded-md shadow-sm bg-gray-700 text-gray-100 focus:border-blue-500 focus:ring-blue-500" onchange="document.getElementById('filtersForm').submit()">
+                        <option value="" {{ $selectedFacultyID ? '' : 'selected' }}>All Faculties</option>
+                        @foreach($faculties as $faculty)
+                            <option value="{{ $faculty->id }}" {{ $selectedFacultyID == $faculty->id ? 'selected' : '' }}>{{ $faculty->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                @endif
+
             </div>
+            </form>
 
             @if(!$selectedBatchID)
                 <p class="text-gray-400">Select a batch to view programs.</p>
             @elseif($programs->isEmpty())
-                <p class="text-gray-400">No programs found for the selected batch.</p>
+                <p class="text-gray-400">No programs found for the selected batch or faculty.</p>
             @else
                 <form action="{{ route('intakes.storeAll') }}" method="POST">
                     @csrf
@@ -37,7 +52,7 @@
                         <table class="min-w-full leading-normal text-left bg-gray-800 rounded-lg overflow-hidden">
                             <thead>
                                 <tr class="bg-gray-700 text-gray-300 uppercase text-sm tracking-wider">
-                                    <th class="py-2 px-4 text-center">Program ID</th>
+                                    <th class="py-2 px-4 text-center">Program Code</th>
                                     <th class="py-2 px-4 text-center">Program Name</th>
                                     <th class="py-2 px-4 text-center">STPM / Matrik</th>
                                     <th class="py-2 px-4 text-center">STAM</th>
@@ -152,6 +167,18 @@
         document.querySelectorAll('input[type="number"]').forEach(input => {
             input.addEventListener('input', calculateTotals);
         });
+
+        document.getElementById('faculty_id').addEventListener('change', function () {
+            const batchId = document.getElementById('batch_id').value;
+            const facultyId = this.value;
+            const url = new URL(window.location.href);
+
+            url.searchParams.set('batch_id', batchId);
+            url.searchParams.set('faculty_id', facultyId);
+
+            window.location.href = url.toString();
+        });
+
 
         // Initial calculation on page load
         calculateTotals();

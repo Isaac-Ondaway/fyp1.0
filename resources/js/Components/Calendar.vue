@@ -15,7 +15,7 @@
 <!-- Vue-controlled Modal -->
 <div
   v-if="isModalOpen"
-  class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-60 z-50"
+  class="fixed inset-0 flex items-center justify-center bg-grey bg-opacity-60 z-50"
 >
   <!-- Modal Content -->
   <div

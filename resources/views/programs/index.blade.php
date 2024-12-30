@@ -20,6 +20,11 @@
                         @endforeach
                     </select>
                 </div>
+                <div class="mt-7">
+                            <a href="{{ route('programs.create') }}" class="btn btn-primary bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                                Add New Program
+                            </a>
+                </div>
             </div>
 
             <!-- Program List -->

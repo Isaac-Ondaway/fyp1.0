@@ -29,11 +29,11 @@
                         {{ __('Interview') }}
                     </x-nav-link>
 
-                    <x-nav-link :href="route('interviews-schedule.index')" :active="request()->routeIs('interviews-schedule.index')">
+                    <x-nav-link :href="route('interviews-schedule.index')" :active="request()->routeIs('interviews-schedule.index')" class="text-center">
                         {{ __('Interview Scheduling') }}
                     </x-nav-link>
 
-                    <x-nav-link :href="route('programs.manage_entry_levels')" :active="request()->routeIs('programs.manage_entry_levels')">
+                    <x-nav-link :href="route('programs.manage_entry_levels')" :active="request()->routeIs('programs.manage_entry_levels')" class="text-center">
                         {{ __('Entry Levels') }}
                     </x-nav-link>
 
@@ -47,7 +47,7 @@
                                 {{ __('Faculty') }}
                             </x-nav-link>
 
-                            <x-nav-link :href="route('admin.user.list')" :active="request()->routeIs('admin.user.list')">
+                            <x-nav-link :href="route('admin.user.list')" :active="request()->routeIs('admin.user.list')" class="text-center">
                                 {{ __('User Manage') }}
                             </x-nav-link>
                         @endif

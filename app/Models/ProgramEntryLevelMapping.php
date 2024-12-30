@@ -13,10 +13,17 @@ class ProgramEntryLevelMapping extends Model
 
     protected $fillable = ['programID', 'batchID', 'entry_level_category_id', 'is_offered'];
 
+    // public function program()
+    // {
+    //     return $this->belongsTo(Program::class, ['programID', 'batchID'], ['programID', 'batchID']);
+    // }
+
     public function program()
     {
-        return $this->belongsTo(Program::class, ['programID', 'batchID'], ['programID', 'batchID']);
+        return $this->belongsTo(Program::class, 'programID', 'programID')
+            ->whereColumn('batchID', 'batchID');
     }
+
 
     public function entryLevelCategory()
     {
