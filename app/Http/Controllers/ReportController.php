@@ -15,6 +15,10 @@ class ReportController extends Controller
     public function combinedReport(Request $request)
     {
         try {
+
+            $user = auth()->user();
+            $isAdmin = $user->hasRole('admin');
+
             // Fetch the latest batch
             $latestBatch = Batch::orderBy('batchStartDate', 'desc')->first();
             if (!$latestBatch) {
@@ -23,18 +27,24 @@ class ReportController extends Controller
 
             // Fetch batches and faculties
             $batches = Batch::orderBy('batchStartDate', 'desc')->get();
-            $faculties = Faculty::all();
+            $faculties = $isAdmin ? Faculty::all() : Faculty::where('id', $user->facultyID)->get();
 
             // Prepare batch entry-level data
-            $batchEntryLevelData = $batches->map(function ($batch) {
-                $entryLevels = ProgramEntryLevel::join('entry_levels', 'program_entry_levels.entry_level_id', '=', 'entry_levels.entryLevelID')
-                    ->where('program_entry_levels.batch_id', $batch->batchID)
-                    ->selectRaw('
-                        SUM(CASE WHEN entry_levels.entryLevelID = 1 THEN intake_count ELSE 0 END) as STPM,
-                        SUM(CASE WHEN entry_levels.entryLevelID = 2 THEN intake_count ELSE 0 END) as STAM,
-                        SUM(CASE WHEN entry_levels.entryLevelID = 3 THEN intake_count ELSE 0 END) as Diploma
-                    ')
-                    ->first();
+            $batchEntryLevelData = $batches->map(function ($batch) use ($isAdmin, $user) {
+                $entryLevelsQuery = ProgramEntryLevel::join('entry_levels', 'program_entry_levels.entry_level_id', '=', 'entry_levels.entryLevelID')
+                    ->where('program_entry_levels.batch_id', $batch->batchID);
+
+                if (!$isAdmin) {
+                    $entryLevelsQuery->whereHas('program', function ($query) use ($user) {
+                        $query->where('facultyID', $user->facultyID);
+                    });
+                }
+
+                $entryLevels = $entryLevelsQuery->selectRaw('
+                    SUM(CASE WHEN entry_levels.entryLevelID = 1 THEN intake_count ELSE 0 END) as STPM,
+                    SUM(CASE WHEN entry_levels.entryLevelID = 2 THEN intake_count ELSE 0 END) as STAM,
+                    SUM(CASE WHEN entry_levels.entryLevelID = 3 THEN intake_count ELSE 0 END) as Diploma
+                ')->first();
 
                 return [
                     'batchName' => $batch->batchName,

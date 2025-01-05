@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use Google_Client;
+use Google\Service\Calendar;
+use Google\Client;
 use Google_Service_Calendar;
 use Google_Service_Calendar_EventDateTime;
 use Illuminate\Http\Request;
@@ -30,20 +32,24 @@ class GoogleCalendarController extends Controller
     public function redirectToGoogle()
     {
         $user = Auth::user();
-
+    
         // Check if the user already has a valid access token
         if ($user->google_access_token && $user->google_token_expires_at > now()) {
             return redirect('/dashboard')->with('success', 'Already connected to Google Calendar');
         }
-
-        // Force Google to prompt the user to select an account and reauthenticate
-        $this->client->setPrompt('select_account consent');
-
-        // Redirect to Google for new authorization
+    
+        // Use the existing client initialized in the constructor
+        $this->client->setAccessType('offline'); // Ensure offline access for refresh tokens
+        $this->client->setPrompt('select_account consent'); // Re-prompt user to select account
+    
+        // Generate the authorization URL
         $authUrl = $this->client->createAuthUrl();
+    
+        // Redirect the user to Google for authorization
         return redirect($authUrl);
     }
-
+    
+    
     public function handleGoogleCallback(Request $request)
     {
         if ($request->has('code')) {
@@ -155,6 +161,8 @@ class GoogleCalendarController extends Controller
         }
     }
 
+
+
     public function updateEvent(Request $request, $id)
     {
         \Log::info('Attempting minimal update for event ID: ' . $id);
@@ -206,139 +214,60 @@ class GoogleCalendarController extends Controller
         }
     }
     
-
-
-    // public function createEvent(Request $request)
+    
+    // public function deleteEvent($id)
     // {
-    //     \Log::info('Starting event creation process');
+    //     \Log::info('Attempting to delete event with ID: ' . $id);
     
-    //     // Check if user and access token exist
-    //     $user = Auth::user();
-    //     \Log::info('Authenticated User:', ['user' => $user]);
-    
-    //     if (!$user || !$user->google_access_token) {
-    //         \Log::error('Google access token not found or user not authenticated');
-    //         return response()->json(['error' => 'Google access token not found or user not authenticated'], 401);
-    //     }
-    
-    //     // Set up Google Client
+    //     $user = Auth::user(); // Get the authenticated user
     //     $accessToken = json_decode($user->google_access_token, true);
+    
+    //     // Set the access token for the Google client
     //     $this->client->setAccessToken($accessToken);
     
-    //     // Check if the token is expired and refresh if necessary
+    //     // Check if the token is expired and refresh it if necessary
     //     if ($this->client->isAccessTokenExpired()) {
-    //         $refreshToken = $user->google_refresh_token;
-    //         if ($refreshToken) {
-    //             $newAccessToken = $this->client->fetchAccessTokenWithRefreshToken($refreshToken);
-    //             $this->client->setAccessToken($newAccessToken);
-    //             $user->google_access_token = json_encode($newAccessToken);
-    //             $user->google_token_expires_at = now()->addSeconds($newAccessToken['expires_in']);
-    //             $user->save();
-    //             \Log::info('Access token refreshed successfully');
-    //         } else {
-    //             \Log::error('No refresh token available');
-    //             return response()->json(['error' => 'No refresh token available'], 403);
-    //         }
+    //         $this->client->fetchAccessTokenWithRefreshToken($this->client->getRefreshToken());
+    //         $newAccessToken = $this->client->getAccessToken();
+            
+    //         // Save the refreshed access token to the user's record
+    //         $user->google_access_token = json_encode($newAccessToken);
+    //         $user->save();
     //     }
     
     //     try {
-    //         // Set up Google Calendar Service
-    //         $service = new \Google_Service_Calendar($this->client);
+    //         $service = new Google_Service_Calendar($this->client);
     //         $calendarId = 'primary';
+            
+    //         // Attempt to delete the event
+    //         $service->events->delete($calendarId, $id);
+    //         \Log::info('Event deleted successfully.');
     
-    //         // Validate and format event data
-    //         $startDateTime = $request->input('start_datetime');
-    //         $endDateTime = $request->input('end_datetime');
-    
-    //         if (!$startDateTime || !$endDateTime) {
-    //             \Log::error('Start or end datetime missing in request.');
-    //             return response()->json(['error' => 'Start or end datetime is missing'], 422);
-    //         }
-    
-    //         // Create a new Google Calendar event
-    //         $event = new \Google_Service_Calendar_Event([
-    //             'summary' => $request->input('title', 'No Title'),
-    //             'description' => $request->input('description', ''),
-    //             'start' => [
-    //                 'dateTime' => $startDateTime,
-    //                 'timeZone' => 'Asia/Kuala_Lumpur',
-    //             ],
-    //             'end' => [
-    //                 'dateTime' => $endDateTime,
-    //                 'timeZone' => 'Asia/Kuala_Lumpur',
-    //             ],
-    //         ]);
-    
-    //         // Insert the event into Google Calendar
-    //         $createdEvent = $service->events->insert($calendarId, $event);
-    
-    //         // Log the response and check for ID
-    //         \Log::info('Google Calendar API Response:', ['response' => $createdEvent]);
-    
-    //         if (!isset($createdEvent->id)) {
-    //             \Log::error('Google Calendar API did not return an event ID.', ['response' => $createdEvent]);
-    //             return response()->json(['error' => 'Failed to create event: Google API did not return an ID'], 500);
-    //         }
-    
-    //         \Log::info('Event created successfully with ID: ' . $createdEvent->id);
-    
-    //         return response()->json([
-    //             'success' => true,
-    //             'event' => [
-    //                 'id' => $createdEvent->id,
-    //                 'summary' => $createdEvent->getSummary(),
-    //                 'start' => $createdEvent->getStart(),
-    //                 'end' => $createdEvent->getEnd(),
-    //             ],
-    //         ]);
-    //     } catch (\Google_Service_Exception $e) {
-    //         \Log::error('Google API error: ' . $e->getMessage());
-    //         return response()->json(['error' => 'Google Calendar API error: ' . $e->getMessage()], 500);
+    //         return response()->json(['success' => true]);
+    //     } catch (Google_Service_Exception $e) {
+    //         \Log::error("Google API error while deleting event: " . $e->getMessage());
+    //         return response()->json(['error' => 'Failed to delete event: ' . $e->getMessage()], $e->getCode());
     //     } catch (\Exception $e) {
-    //         \Log::error('General error: ' . $e->getMessage());
-    //         return response()->json(['error' => 'General error: ' . $e->getMessage()], 500);
+    //         \Log::error("General error while deleting event: " . $e->getMessage());
+    //         return response()->json(['error' => 'Failed to delete event'], 500);
     //     }
     // }
-    
-    
     public function deleteEvent($id)
     {
-        \Log::info('Attempting to delete event with ID: ' . $id);
-    
-        $user = Auth::user(); // Get the authenticated user
-        $accessToken = json_decode($user->google_access_token, true);
-    
-        // Set the access token for the Google client
-        $this->client->setAccessToken($accessToken);
-    
-        // Check if the token is expired and refresh it if necessary
-        if ($this->client->isAccessTokenExpired()) {
-            $this->client->fetchAccessTokenWithRefreshToken($this->client->getRefreshToken());
-            $newAccessToken = $this->client->getAccessToken();
-            
-            // Save the refreshed access token to the user's record
-            $user->google_access_token = json_encode($newAccessToken);
-            $user->save();
-        }
-    
         try {
-            $service = new Google_Service_Calendar($this->client);
-            $calendarId = 'primary';
-            
-            // Attempt to delete the event
-            $service->events->delete($calendarId, $id);
-            \Log::info('Event deleted successfully.');
+            $client = new Google_Client();
+            $client->setAccessToken(auth()->user()->google_access_token); // Replace with your token logic
     
-            return response()->json(['success' => true]);
-        } catch (Google_Service_Exception $e) {
-            \Log::error("Google API error while deleting event: " . $e->getMessage());
-            return response()->json(['error' => 'Failed to delete event: ' . $e->getMessage()], $e->getCode());
+            $service = new Google_Service_Calendar($client);
+            $service->events->delete('primary', $id); // 'primary' is the default calendar
+    
+            return response()->json(['message' => 'Event deleted successfully'], 200);
+        } catch (\Google_Service_Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
         } catch (\Exception $e) {
-            \Log::error("General error while deleting event: " . $e->getMessage());
-            return response()->json(['error' => 'Failed to delete event'], 500);
+            return response()->json(['error' => 'An unexpected error occurred.'], 500);
         }
     }
-    
     
 
 

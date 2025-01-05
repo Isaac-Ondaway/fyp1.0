@@ -24,7 +24,8 @@
   >
     <!-- Modal Header -->
     <div class="flex justify-between items-center border-b pb-4 mb-4">
-      <h2 class="text-2xl font-bold text-gray-800">Add New Event</h2>
+      <h2 class="text-2xl font-bold text-gray-800">
+        {{ eventForm.id ? 'Edit Event' : 'Create New Event' }}</h2>
       <button
         @click="closeModal"
         class="text-gray-600 hover:text-gray-900 text-3xl font-bold"
@@ -133,12 +134,94 @@
           type="submit"
           class="ml-2 px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600"
         >
-          Save Event
+        {{ eventForm.id ? 'Update Event' : 'Save Event' }}
         </button>
       </div>
     </form>
   </div>
 </div>
+
+
+<!-- Event Details Modal -->
+<div
+  v-if="isEventModalOpen"
+  class="fixed inset-0 flex items-center justify-center  bg-opacity-30 z-50"
+>
+  <div
+    class="bg-white rounded-lg shadow-lg max-w-lg w-full mx-auto p-6 relative"
+    style="border: 1px solid #e5e7eb;"
+  >
+    <!-- Modal Header -->
+    <div class="flex justify-between items-center border-b pb-4">
+      <h2 class="text-2xl font-semibold text-gray-900">Event Details</h2>
+      <button
+        @click="closeEventModal"
+        class="text-gray-500 hover:text-gray-700 text-2xl font-bold"
+        aria-label="Close"
+      >
+        &times;
+      </button>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="mt-4 space-y-4 text-gray-700">
+      <div>
+        <p class="text-sm font-semibold">Title:</p>
+        <p class="text-base">{{ eventForm.title }}</p>
+      </div>
+      <div>
+        <p class="text-sm font-semibold">Description:</p>
+        <p class="text-base">{{ eventForm.description }}</p>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <p class="text-sm font-semibold">Start:</p>
+          <p class="text-base">{{ eventForm.start_datetime }}</p>
+        </div>
+        <div>
+          <p class="text-sm font-semibold">End:</p>
+          <p class="text-base">{{ eventForm.end_datetime }}</p>
+        </div>
+      </div>
+      <div>
+        <p class="text-sm font-semibold">Color:</p>
+        <span
+          class="px-2 py-1 text-sm rounded"
+          :style="{ backgroundColor: eventForm.color, color: '#fff' }"
+        >
+          {{ eventForm.color }}
+        </span>
+      </div>
+      <div>
+        <p class="text-sm font-semibold">Visibility:</p>
+        <p class="text-base capitalize">{{ eventForm.visibility }}</p>
+      </div>
+      <div>
+        <p class="text-sm font-semibold">All Day:</p>
+        <p class="text-base">{{ eventForm.all_day ? 'Yes' : 'No' }}</p>
+      </div>
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="flex justify-end mt-6 border-t pt-4 space-x-3">
+      <button
+        type="button"
+        class="px-4 py-2 text-sm font-semibold text-white bg-blue-500 rounded-md hover:bg-blue-600"
+        @click="editEvent"
+      >
+        Edit
+      </button>
+      <button
+        type="button"
+        class="px-4 py-2 text-sm font-semibold text-white bg-red-500 rounded-md hover:bg-red-600"
+        @click="deleteEvent"
+      >
+        Delete
+      </button>
+    </div>
+  </div>
+</div>
+
 </template>
 
 <script>
@@ -154,6 +237,7 @@ export default {
     return {
       calendarKey: 0, // Key for re-rendering calendar
       isModalOpen: false, // Controls modal visibility
+      isEventModalOpen: false,
       calendarOptions: {
         plugins: [dayGridPlugin, timeGridPlugin, listPlugin, interactionPlugin],
         initialView: 'dayGridMonth',
@@ -180,9 +264,62 @@ export default {
     };
   },
   mounted() {
+
     this.refreshEvents();
   },
   methods: {
+
+      /**
+   * Format datetime into a readable format
+   */
+   formatDateTime(datetime) {
+  if (!datetime) return ''; // Return an empty string if no date is provided
+  const d = new Date(datetime);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0'); // Ensure 2-digit month
+  const day = String(d.getDate()).padStart(2, '0'); // Ensure 2-digit day
+  const hours = String(d.getHours()).padStart(2, '0'); // Ensure 2-digit hour
+  const minutes = String(d.getMinutes()).padStart(2, '0'); // Ensure 2-digit minute
+  return `${year}-${month}-${day}T${hours}:${minutes}`; // Format as YYYY-MM-DDTHH:MM
+},
+
+      // Edit the selected event
+      editEvent() {
+  // Close the details modal
+  this.isEventModalOpen = false;
+
+  // Open the edit modal with the current event data
+  this.isModalOpen = true;
+
+  // Format the date for datetime-local input
+  const formatDateTimeLocal = (datetime) => {
+    const d = new Date(datetime);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0'); // Ensure 2-digit month
+    const day = String(d.getDate()).padStart(2, '0'); // Ensure 2-digit day
+    const hours = String(d.getHours()).padStart(2, '0'); // Ensure 2-digit hour
+    const minutes = String(d.getMinutes()).padStart(2, '0'); // Ensure 2-digit minute
+    return `${year}-${month}-${day}T${hours}:${minutes}`; // Format as YYYY-MM-DDTHH:mm
+  };
+
+  this.eventForm.start_datetime = formatDateTimeLocal(this.eventForm.start_datetime);
+  this.eventForm.end_datetime = formatDateTimeLocal(this.eventForm.end_datetime);
+  this.eventForm.visibility = this.eventForm.visibility
+},
+
+
+    submitEvent() {
+    if (this.eventForm.id) {
+      // Update existing event
+      this.updateEvent();
+    } else {
+      // Create a new event
+      this.saveEvent();
+    }
+  },
+
+
+
     /**
      * Fetch and merge events from local database and Google Calendar
      */
@@ -204,6 +341,8 @@ export default {
             title: event.title,
             start: event.start,
             end: event.end,
+            description: event.description,
+            allDay: event.allDay,
             color: event.color || '#3788d8',
           }));
         }
@@ -241,6 +380,7 @@ export default {
   }
 },
 
+
     /**
      * Handle date selection and open modal
      */
@@ -258,6 +398,7 @@ export default {
   };
 
       this.eventForm = {
+        id,
         title: '',
         description: '',
         start_datetime: formatDateTimeLocal(info.start),
@@ -307,39 +448,152 @@ export default {
     },
 
     /**
-     * Handle event click (for deleting an event)
+     * Update event
      */
-    async handleEventClick(info) {
-      if (confirm(`Delete event: ${info.event.title}?`)) {
-        const isLocalEvent = info.event.id.startsWith('local-');
-        const eventId = info.event.id.replace(/^(local-|google-)/, '');
+    async updateEvent() {
+    try {
+      const response = await fetch(`/events/update/${this.eventForm.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(this.eventForm),
+      });
 
-        try {
-          const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-          const url = isLocalEvent
-            ? `/events/delete/${eventId}`
-            : `/api/google-calendar-events/${eventId}`;
-
-          const response = await fetch(url, {
-            method: 'DELETE',
-            headers: { 'X-CSRF-TOKEN': csrfToken },
-          });
-
-          if (response.ok) {
-            await this.refreshEvents();
-            alert('Event deleted successfully!');
-          } else {
-            console.error('Failed to delete event.');
-          }
-        } catch (error) {
-          console.error('Error deleting event:', error);
-        }
+      if (response.ok) {
+        this.refreshEvents();
+        this.closeModal();
+        alert('Event updated successfully!');
+      } else {
+        console.error('Failed to update event.');
       }
-    },
+    } catch (error) {
+      console.error('Error updating event:', error);
+    }
+  },
+
+  closeModal() {
+    this.isModalOpen = false;
+    this.eventForm = {
+      id: null,
+      title: '',
+      description: '',
+      start_datetime: '',
+      end_datetime: '',
+      color: '#3788d8',
+      visibility: 'public',
+      all_day: false,
+    };
+  },
+    
+
+    /**
+     * Handle event click 
+     */
+     async handleEventClick(info) {
+  const eventId = info.event.id.replace(/^(local-|google-)/, ''); // Strip prefixes
+  const isLocalEvent = info.event.id.startsWith('local-');
+  const isGoogleEvent = info.event.id.startsWith('google-');
+
+
+
+  try {
+    if (isLocalEvent) {
+      // Handle local event
+      this.openEventModal(info.event);
+    }  else if (isGoogleEvent) {
+      
+      // Fetch Google event details or use directly from calendar data
+      this.eventForm = {
+        id: info.event.id,
+        title: info.event.title || 'No Title',
+        description: info.event.extendedProps?.description || 'No Description',
+        start_datetime: this.formatDateTime(info.event.start), // Format the start time
+    end_datetime: info.event.end ? this.formatDateTime(info.event.end) : 'No End Time', // Format the end time
+        color: info.event.backgroundColor || '#f39c12',
+        visibility: 'private', // Google events are typically private unless configured otherwise
+        all_day: info.event.allDay || false,
+      };
+      this.isEventModalOpen = true; // Open the modal
+    } else {
+      console.warn('Unknown event type clicked');
+    }
+  } catch (error) {
+    console.error('Error handling event click:', error);
+  }
+},
+
+
+openEventModal(event) {
+    // Populate the eventForm with the event details
+    this.eventForm = {
+      id: event.id || '',
+      title: event.title || '',
+      description: event.extendedProps?.description || '',
+      start_datetime: event.start || '',
+      end_datetime: event.end || '',
+      color: event.backgroundColor || '#3788d8',
+      visibility: event.visibility || 'public',
+      all_day: event.allDay || false,
+    };
+
+    // Open the Event Details modal
+    this.isEventModalOpen = true;
+  },
+
+closeEventModal() {
+    this.isEventModalOpen = false; // Close the Event Details modal
+  },
 
     grantGoogleAccess() {
       window.location.href = '/auth/google-calendar';
     },
+
+    async deleteEvent() {
+    if (!this.eventForm.id) {
+        console.error("Event ID is missing. Cannot delete the event.");
+        return;
+    }
+
+    if (confirm(`Are you sure you want to delete the event: "${this.eventForm.title}"?`)) {
+        const isLocalEvent = this.eventForm.id.startsWith('local-');
+        const eventId = this.eventForm.id.replace(/^(local-|google-)/, '');
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            const authToken = 'Bearer YOUR_GOOGLE_AUTH_TOKEN'; // Replace with your actual token
+            const url = isLocalEvent
+                ? `/events/delete/${eventId}` // Local event endpoint
+                : `/api/google-calendar-events/${eventId}`; // Google event endpoint
+
+            console.log("Deleting event with URL:", url);
+
+            const response = await fetch(url, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    Authorization: authToken, // Required for Google API
+                },
+                body: JSON.stringify({}), // Some APIs require an empty body
+            });
+
+            if (response.ok) {
+                alert('Event deleted successfully!');
+                await this.refreshEvents(); // Refresh events after deletion
+                this.closeEventModal(); // Close the event modal
+            } else {
+                const errorData = await response.json();
+                console.error('Failed to delete the event:', errorData.error);
+            }
+        } catch (error) {
+            console.error('Error deleting the event:', error);
+        }
+    }
+}
+
+,
+
+
+
   },
 };
 </script>

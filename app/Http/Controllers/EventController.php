@@ -172,22 +172,46 @@ class EventController extends Controller
         return response()->json(['success' => true, 'event' => $event]);
     }
     
+    public function showEvent($id)
+{
+    $event = Event::find($id);
+    if ($event) {
+        return response()->json($event);
+    }
+    return response()->json(['error' => 'Event not found'], 404);
+}
 
-    public function deleteEvent($id)
-    {
-        $event = Event::find($id);
+
+    // public function deleteEvent($id)
+    // {
+    //     $event = Event::find($id);
     
-        // Delete event from Google Calendar if it's public
-        if ($event->visibility === 'public') {
-            $this->googleCalendarService->deleteEvent($event->google_event_id);
+    //     // Delete event from Google Calendar if it's public
+    //     if ($event->visibility === 'public') {
+    //         $this->googleCalendarService->deleteEvent($event->google_event_id);
+    //     }
+    
+    //     // Delete the event from the database
+    //     $event->delete();
+    
+    //     return response()->json(['success' => true]);
+    // }
+    public function destroy($id)
+    {
+        // Strip "local-" if it exists
+        $cleanId = str_replace('local-', '', $id);
+    
+        // Find and delete the event
+        $event = Event::find($cleanId);
+        if (!$event) {
+            return response()->json(['error' => 'Event not found'], 404);
         }
     
-        // Delete the event from the database
         $event->delete();
-    
-        return response()->json(['success' => true]);
+        return response()->json(['message' => 'Event deleted successfully'], 200);
     }
     
+
     
 }
 

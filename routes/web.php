@@ -21,7 +21,7 @@ use Inertia\Inertia;
 
 // Home Route
 Route::get('/', function () {
-    return view('welcome');
+    return redirect('/login'); // Redirect to the login page
 });
 
 //User Manage
@@ -112,12 +112,16 @@ Route::post('/bookings/store', [BookingController::class, 'store'])->name('booki
 // //Event Route
 Route::get('/events/fetch', [EventController::class, 'fetchEvents']);
 Route::post('/events/store', [EventController::class, 'storeEvent']);
+Route::get('/events/show/{id}', [EventController::class, 'showEvent']);
 Route::post('/events/update/{id}', [EventController::class, 'updateEvent']);
-Route::post('/events/delete/{id}', [EventController::class, 'deleteEvent']);
+Route::delete('/events/delete/{id}', [EventController::class, 'destroy']);
+
 
 // //Google Calendar
 Route::get('/auth/google-calendar', [GoogleCalendarController::class, 'redirectToGoogle'])->name('google.redirect');
 Route::get('/auth/google-calendar/callback', [GoogleCalendarController::class, 'handleGoogleCallback'])->name('google.callback');
+Route::delete('/api/google-calendar-events/{id}', [GoogleCalendarController::class, 'deleteEvent']);
+
 
 //Batches Route
 Route::resource('batches', BatchController::class);
