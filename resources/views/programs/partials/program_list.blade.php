@@ -118,7 +118,7 @@
             <h3 class="text-xl font-semibold text-gray-700 mb-3">Eligibility</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <p><strong>Bumiputera:</strong> <span id="modalIsBumiputera" class="font-semibold"></span></p>
-                <p><strong>TEVT:</strong> <span id="modalIsTEVT" class="font-semibold"></span></p>
+                <p><strong>TVET:</strong> <span id="modalIsTVET" class="font-semibold"></span></p>
                 <p><strong>Kompetitif:</strong> <span id="modalIsKompetitif" class="font-semibold"></span></p>
                 <p><strong>BTECH:</strong> <span id="modalIsBTECH" class="font-semibold"></span></p>
                 <p><strong>OKU:</strong> <span id="modalIsOKU" class="font-semibold"></span></p>

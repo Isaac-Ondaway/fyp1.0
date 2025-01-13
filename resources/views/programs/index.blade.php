@@ -54,7 +54,7 @@
                 <p><strong>Double Degree:</strong> <span id="modalIsDDegree"></span></p>
                 <p><strong>Learning Module:</strong> <span id="modalLearnMod"></span></p>
                 <p><strong>Bumiputera:</strong> <span id="modalIsBumiputera"></span></p>
-                <p><strong>TEVT:</strong> <span id="modalIsTEVT"></span></p>
+                <p><strong>TVET:</strong> <span id="modalIsTVET"></span></p>
                 <p><strong>Kompetitif:</strong> <span id="modalIsKompetitif"></span></p>
                 <p><strong>BTECH:</strong> <span id="modalIsBTECH"></span></p>
                 <p><strong>OKU:</strong> <span id="modalIsOKU"></span></p>
@@ -114,7 +114,7 @@
             document.getElementById('modalIsDDegree').innerText = program.isDDegree ? 'Yes' : 'No';
             document.getElementById('modalLearnMod').innerText = program.learnMod ? 'Yes' : 'No';
             document.getElementById('modalIsBumiputera').innerText = program.isBumiputera ? 'Yes' : 'No';
-            document.getElementById('modalIsTEVT').innerText = program.isTEVT ? 'Yes' : 'No';
+            document.getElementById('modalIsTVET').innerText = program.isTVET ? 'Yes' : 'No';
             document.getElementById('modalIsKompetitif').innerText = program.isKompetitif ? 'Yes' : 'No';
             document.getElementById('modalIsBTECH').innerText = program.isBTECH ? 'Yes' : 'No';
             document.getElementById('modalIsOKU').innerText = program.isOKU ? 'Yes' : 'No';

@@ -104,7 +104,7 @@
                         'isDDegree' => 'DDegree',
                         'learnMod' => 'Learn Mode',
                         'isBumiputera' => 'Bumiputera',
-                        'isTEVT' => 'TEVT',
+                        'isTVET' => 'TVET',
                         'isKompetitif' => 'Kompetitif',
                         'isBTECH' => 'BTECH',
                         'isOKU' => 'OKU'

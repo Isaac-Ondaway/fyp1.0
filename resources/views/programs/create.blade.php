@@ -91,7 +91,7 @@
                 </div>
 
                 <!-- Boolean Options -->
-                @foreach (['isInterviewExam', 'isUjianMedsi', 'isRayuan', 'isDDegree', 'learnMod', 'isBumiputera', 'isTEVT', 'isKompetitif', 'isBTECH', 'isOKU'] as $field)
+                @foreach (['isInterviewExam', 'isUjianMedsi', 'isRayuan', 'isDDegree', 'learnMod', 'isBumiputera', 'isTVET', 'isKompetitif', 'isBTECH', 'isOKU'] as $field)
                     <div>
                         <label for="{{ $field }}" class="block text-gray-300 font-semibold mb-2">{{ ucwords(str_replace('is', '', str_replace('_', ' ', $field))) }}</label>
                         <select id="{{ $field }}" name="{{ $field }}" class="w-full bg-gray-700 text-gray-100 rounded-lg px-4 py-2" required>

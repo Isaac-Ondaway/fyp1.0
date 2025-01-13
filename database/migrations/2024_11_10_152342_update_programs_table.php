@@ -23,7 +23,7 @@ return new class extends Migration
             $table->boolean('isDDegree');
             $table->boolean('learnMod');
             $table->boolean('isBumiputera');
-            $table->boolean('isTEVT');
+            $table->boolean('isTVET');
             $table->boolean('isKompetitif');
             $table->boolean('isBTECH');
             $table->boolean('isOKU');
@@ -45,7 +45,7 @@ return new class extends Migration
                 'isDDegree',
                 'learnMod',
                 'isBumiputera',
-                'isTEVT',
+                'isTVET',
                 'isKompetitif',
                 'isBTECH',
                 'isOKU',

@@ -33,7 +33,7 @@ class Program extends Model
         'isDDegree',
         'learnMod',
         'isBumiputera',
-        'isTEVT',
+        'isTVET',
         'isKompetitif',
         'isBTECH',
         'isOKU',

@@ -49,7 +49,7 @@
                 <h3 class="text-lg font-semibold text-blue-500 mb-2">Eligibility</h3>
                 <div class="grid grid-cols-2 gap-4 text-gray-700">
                     <p><strong>Bumiputera:</strong> {{ $program->isBumiputera ? 'Yes' : 'No' }}</p>
-                    <p><strong>TEVT:</strong> {{ $program->isTEVT ? 'Yes' : 'No' }}</p>
+                    <p><strong>TVET:</strong> {{ $program->isTVET ? 'Yes' : 'No' }}</p>
                     <p><strong>Kompetitif:</strong> {{ $program->isKompetitif ? 'Yes' : 'No' }}</p>
                     <p><strong>BTECH:</strong> {{ $program->isBTECH ? 'Yes' : 'No' }}</p>
                     <p><strong>OKU:</strong> {{ $program->isOKU ? 'Yes' : 'No' }}</p>

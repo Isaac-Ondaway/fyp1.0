@@ -6,6 +6,7 @@ use App\Models\Interview;
 use App\Models\Batch;
 use App\Models\Program;
 use App\Models\InterviewSchedule;
+use Carbon\Carbon;
 use App\Services\SystemEmailService;
 use Illuminate\Http\Request;
 
@@ -195,38 +196,70 @@ class InterviewScheduleController extends Controller
         return response()->json($events);
     }
 
+    // public function scheduleInterview(Request $request, SystemEmailService $emailService)
+    // {
+
+    //      // Log the request to verify it's received
+    //      \Log::info('Email Request Received:', $request->all());
+
+    //     // Validate the input
+    //     $validated = $request->validate([
+    //         'interviewee_id' => 'required|exists:interviews,interviewID', // Validate against `interviews.interviewID`
+    //         'scheduled_date' => 'required|date_format:Y-m-d H:i',
+    //     ]);
+
+    //     // Retrieve the schedule from `interview_schedule`
+    //     $schedule = InterviewSchedule::with('interviewee')->where('interviewee_id', $validated['interviewee_id'])->firstOrFail();
+
+    //     // Compose the email
+    //     $emailService->sendEmail(
+    //         $schedule->interviewee->email, // Access the email from the related `interviewee`
+    //         'Interview Scheduled',
+    //         "Dear {$schedule->interviewee->intervieweeName},\n\nYour interview is scheduled as follows:\nDate & Time: {$schedule->scheduled_date->format('Y-m-d H:i')}\n\nThank you!"
+    //     );
+
     public function scheduleInterview(Request $request, SystemEmailService $emailService)
-    {
+{
+    // Log the request to verify it's received
+    \Log::info('Email Request Received:', $request->all());
 
-         // Log the request to verify it's received
-         \Log::info('Email Request Received:', $request->all());
+    // Validate the input
+    $validated = $request->validate([
+        'interviewee_id' => 'required|exists:interviews,interviewID', // Validate against `interviews.interviewID`
+        'scheduled_date' => 'required|date_format:Y-m-d H:i',
+    ]);
 
-        // Validate the input
-        $validated = $request->validate([
-            'interviewee_id' => 'required|exists:interviews,interviewID', // Validate against `interviews.interviewID`
-            'scheduled_date' => 'required|date_format:Y-m-d H:i',
-        ]);
+    // Retrieve the schedule from `interview_schedule`
+    $schedule = InterviewSchedule::with('interviewee')->where('interviewee_id', $validated['interviewee_id'])->firstOrFail();
 
-        // Retrieve the schedule from `interview_schedule`
-        $schedule = InterviewSchedule::with('interviewee')->where('interviewee_id', $validated['interviewee_id'])->firstOrFail();
+    // Retrieve venue (assuming `venue` is a column in the `interview_schedule` table)
+    $venue = $schedule->venue ?? 'To be confirmed'; // Fallback if venue is null
 
-        // Compose the email
-        $emailService->sendEmail(
-            $schedule->interviewee->email, // Access the email from the related `interviewee`
-            'Interview Scheduled',
-            "Dear {$schedule->interviewee->intervieweeName},\n\nYour interview is scheduled as follows:\nDate & Time: {$schedule->scheduled_date->format('Y-m-d H:i')}\n\nThank you!"
-        );
+     // Format the date and time
+     $formattedDate = Carbon::parse($schedule->scheduled_date)->format('j M Y h:iA'); // Example: 9 Jan 2025 08:00AM
 
-            // Update the `status` column in the database
-            $schedule->update(['status' => 'Scheduled']);
+    // Compose the email
+    $emailService->sendEmail(
+        $schedule->interviewee->email, // Access the email from the related `interviewee`
+        'Interview Invitation: Scheduled Details',
+        "Dear {$schedule->interviewee->intervieweeName},\n\n" .
+        "We are pleased to invite you to attend an interview for the program you have applied to. Below are the details of your scheduled interview:\n\n" .
+        "Date & Time: {$formattedDate} \n" .
+        "Venue: {$venue} \n\n" .
+        "Please ensure that you arrive at least 15 minutes prior to your scheduled time and bring all necessary documents as communicated earlier.\n\n" .
+        "If you have any questions or require further assistance, please do not hesitate to contact us.\n\n" .
+        "Best regards,\n\n" .
+        "The Admissions Team\n" .
+        "UMS - FPOMS"
+    );
 
-            // Log the update
-            \Log::info("Interview schedule status updated to 'Scheduled' for interviewee_id: {$schedule->interviewee_id}");
+    // Update the `status` column in the database
+    $schedule->update(['status' => 'Scheduled']);
 
+    // Log the email sent
+    \Log::info('Interview scheduled email sent to:', ['email' => $schedule->interviewee->email]);
 
-        // Return success response
-        return back()->with('success', "Email sent to {$schedule->interviewee->intervieweeName} successfully!");
-    }
-    
+    return back()->with('success', "Email sent to {$schedule->interviewee->intervieweeName} successfully!");
+}
 
 }
