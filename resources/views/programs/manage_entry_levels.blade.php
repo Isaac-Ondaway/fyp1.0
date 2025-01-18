@@ -42,7 +42,7 @@
             <table class="table-auto w-full border-collapse border border-gray-700 text-white relative">
                 <thead class="bg-gray-900">
                     <tr>
-                        <th class="border border-gray-700 px-4 py-2 text-left">Program ID</th>
+                        <th class="border border-gray-700 px-4 py-2 text-left">Program Code</th>
                         <th class="border border-gray-700 px-4 py-2 text-left">Program Name</th>
                         @foreach ($categories as $category)
                             <th class="border border-gray-700 px-4 py-2 text-center">{{ $category->categoryName }}</th>

@@ -398,7 +398,7 @@ export default {
   };
 
       this.eventForm = {
-        id,
+        id: null,
         title: '',
         description: '',
         start_datetime: formatDateTimeLocal(info.start),
@@ -410,6 +410,7 @@ export default {
       };
 
       // Open the modal
+      console.log('Date selected:', this.eventForm); // Debugging
       this.isModalOpen = true;
     },
 
