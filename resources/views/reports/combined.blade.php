@@ -180,70 +180,105 @@ function printReport() {
 
     <!-- Chart Initialization Script -->
     <script>
-        // Original Data
-        const batchLabels = @json($batchEntryLevelData->pluck('batchName'));
-        const originalBatchData = @json($batchEntryLevelData->pluck('entryLevels'));
-        const facultyData = @json($facultyBatchData);
+    // Original Data
+    const batchLabels = @json($batchEntryLevelData->pluck('batchName'));
+    const originalBatchData = @json($batchEntryLevelData->pluck('entryLevels'));
+    const facultyData = @json($facultyBatchData);
 
-        let batchChart;
+    let batchChart;
 
-        function updateBatchChart(data, labels) {
-            const chartData = {
-                labels: labels,
-                datasets: [
-                    { label: 'STPM', data: data.map(batch => batch.STPM || 0), backgroundColor: 'rgba(54, 162, 235, 0.6)', borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 2 },
-                    { label: 'STAM', data: data.map(batch => batch.STAM || 0), backgroundColor: 'rgba(255, 206, 86, 0.6)', borderColor: 'rgba(255, 206, 86, 1)', borderWidth: 2 },
-                    { label: 'Diploma', data: data.map(batch => batch.Diploma || 0), backgroundColor: 'rgba(75, 192, 192, 0.6)', borderColor: 'rgba(75, 192, 192, 1)', borderWidth: 2 }
-                ]
-            };
+    // Helper function to sort data by batchStartDate
+    function sortDataByBatchStartDate(data, batchNames) {
+        const sortedData = data
+            .map((entry, index) => ({
+                batchName: batchNames[index],
+                entryLevels: entry,
+                batchStartDate: new Date(entry.batchStartDate), // Ensure you have batchStartDate in your data
+            }))
+            .sort((a, b) => a.batchStartDate - b.batchStartDate); // Sort ascending by batchStartDate
 
-            if (batchChart) {
-                batchChart.data.labels = labels;
-                batchChart.data.datasets = chartData.datasets;
-                batchChart.update();
-            } else {
-                const batchCtx = document.getElementById('batchIntakeChart')?.getContext('2d');
-                batchChart = new Chart(batchCtx, {
-                    type: 'bar',
-                    data: chartData,
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { labels: { color: '#FFFFFF', font: { size: 14 } } },
-                            datalabels: {
-                                color: '#FFFFFF',
-                                anchor: 'end',
-                                align: 'start',
-                                offset: 5,
-                                font: { weight: 'bold', size: 12 },
-                                formatter: value => (value > 0 ? value : '')
-                            }
-                        },
-                        scales: {
-                            x: { grid: { color: '#444444' }, ticks: { color: '#FFFFFF', maxRotation: 45, minRotation: 0, padding: 10 } },
-                            y: { grid: { color: '#444444' }, ticks: { color: '#FFFFFF', padding: 10 } }
+        return {
+            labels: sortedData.map(item => item.batchName),
+            data: sortedData.map(item => item.entryLevels),
+        };
+    }
+
+    // Update chart with sorted and limited data
+    function updateBatchChart(data, labels) {
+        const chartData = {
+            labels: labels,
+            datasets: [
+                { label: 'STPM', data: data.map(batch => batch.STPM || 0), backgroundColor: 'rgba(54, 162, 235, 0.6)', borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 2 },
+                { label: 'STAM', data: data.map(batch => batch.STAM || 0), backgroundColor: 'rgba(255, 206, 86, 0.6)', borderColor: 'rgba(255, 206, 86, 1)', borderWidth: 2 },
+                { label: 'Diploma', data: data.map(batch => batch.Diploma || 0), backgroundColor: 'rgba(75, 192, 192, 0.6)', borderColor: 'rgba(75, 192, 192, 1)', borderWidth: 2 }
+            ]
+        };
+
+        if (batchChart) {
+            batchChart.data.labels = labels;
+            batchChart.data.datasets = chartData.datasets;
+            batchChart.update();
+        } else {
+            const batchCtx = document.getElementById('batchIntakeChart')?.getContext('2d');
+            batchChart = new Chart(batchCtx, {
+                type: 'bar',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#FFFFFF', font: { size: 14 } } },
+                        datalabels: {
+                            color: '#FFFFFF',
+                            anchor: 'end',
+                            align: 'start',
+                            offset: 5,
+                            font: { weight: 'bold', size: 12 },
+                            formatter: value => (value > 0 ? value : '')
                         }
                     },
-                    plugins: [ChartDataLabels]
-                });
-            }
+                    scales: {
+                        x: { grid: { color: '#444444' }, ticks: { color: '#FFFFFF', maxRotation: 45, minRotation: 0, padding: 10 } },
+                        y: { grid: { color: '#444444' }, ticks: { color: '#FFFFFF', padding: 10 } }
+                    }
+                },
+                plugins: [ChartDataLabels]
+            });
         }
+    }
 
-        document.getElementById('facultyFilter').addEventListener('change', (event) => {
-            const facultyID = event.target.value;
+    // Sorting the original data by batchStartDate and limiting to the latest 2 batches
+    const { labels: sortedLabels, data: sortedData } = sortDataByBatchStartDate(originalBatchData, batchLabels);
 
-            if (facultyID === 'all') {
-                updateBatchChart(originalBatchData.reverse(), batchLabels.reverse());
-            } else {
-                const filteredData = facultyData[facultyID] || [];
-                const filteredLabels = batchLabels.reverse();
-                updateBatchChart(filteredData.map(data => data.entryLevels), filteredLabels);
-            }
+    // Get the latest 2 batches
+    const latestBatches = {
+        labels: sortedLabels.slice(-2), // Last 2 batches
+        data: sortedData.slice(-2) // Corresponding entryLevels
+    };
+
+    // Update chart on page load with the latest 2 batches
+    updateBatchChart(latestBatches.data, latestBatches.labels);
+
+    document.getElementById('facultyFilter').addEventListener('change', (event) => {
+        const facultyID = event.target.value;
+
+        if (facultyID === 'all') {
+        // Show all batches with correct order
+        updateBatchChart(latestBatches.data, latestBatches.labels);
+    } else {
+        const filteredData = facultyData[facultyID] || [];
+
+        // Match the batch labels with the filtered data
+        const alignedData = latestBatches.labels.map(label => {
+            const batchData = filteredData.find(batch => batch.batchName === label);
+            return batchData ? batchData.entryLevels : { STPM: 0, STAM: 0, Diploma: 0 };
         });
 
-        updateBatchChart(originalBatchData.reverse(), batchLabels.reverse());
-    </script>
+        updateBatchChart(alignedData, latestBatches.labels);
+    }
+});
+</script>
+
 
     <!-- AJAX Filtering Script -->
     <script>

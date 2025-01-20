@@ -42,8 +42,8 @@
             <table class="table-auto w-full border-collapse border border-gray-700 text-white relative">
                 <thead class="bg-gray-900">
                     <tr>
-                        <th class="border border-gray-700 px-4 py-2 text-left">Program Code</th>
-                        <th class="border border-gray-700 px-4 py-2 text-left">Program Name</th>
+                        <th class="border border-gray-700 px-4 py-2 text-left sticky">Program Code</th>
+                        <th class="border border-gray-700 px-4 py-2 text-left sticky">Program Name</th>
                         @foreach ($categories as $category)
                             <th class="border border-gray-700 px-4 py-2 text-center">{{ $category->categoryName }}</th>
                         @endforeach
@@ -52,8 +52,8 @@
                 <tbody>
                     @foreach ($programs as $program)
                         <tr>
-                            <td class="border border-gray-700 px-4 py-2">{{ $program->programID }}</td>
-                            <td class="border border-gray-700 px-4 py-2">{{ $program->programName }}</td>
+                            <td class="border border-gray-700 px-4 py-2 sticky">{{ $program->programID }}</td>
+                            <td class="border border-gray-700 px-4 py-2 sticky">{{ $program->programName }}</td>
                             @foreach ($categories as $category)
                                 <td class="border border-gray-700 px-4 py-2 text-center">
                                     <input 

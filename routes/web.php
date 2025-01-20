@@ -89,9 +89,9 @@ Route::put('/interviews/{interview}/update-status', [InterviewController::class,
 Route::post('/interviews/bulk-update-ajax', [InterviewController::class, 'bulkUpdateAjax'])->name('interviews.bulkUpdateAjax');
 // Batch and Program Fetching Routes
 Route::get('/interviews/get-batches/{programID}', [InterviewController::class, 'getBatchesForProgram']);
-Route::get('/interviews/get-programs-for-batch/{batchID}', [InterviewController::class, 'getProgramsForBatch']);
+Route::get('/interviews/get-programs/{batchID}', [InterviewController::class, 'getProgramsForBatch']);
 // Resource Route (defined at the end to avoid conflicts)
-Route::resource('interviews', InterviewController::class)->except(['store']);
+Route::resource('interviews', InterviewController::class)->except(['store','show']);
 Route::get('/interviews/{id}/edit', [InterviewController::class, 'edit'])->name('interviews.edit');
 Route::put('/interviews/{id}', [InterviewController::class, 'update'])->name('interviews.update');
 // Route for displaying the bulk edit page
@@ -101,6 +101,11 @@ Route::put('/interviews/bulk-update', [InterviewController::class, 'bulkUpdate']
     ->middleware('auth')  // Ensure this is correctly applied
     ->name('interviews.bulkUpdate');
 Route::delete('/interviews/bulk-delete', [InterviewController::class, 'bulkDelete'])->name('interviews.bulkDelete');
+Route::get('/interviews/check-duplicate-contact', [InterviewController::class, 'checkDuplicateContact']);
+Route::get('/interviews/check-duplicate-email', [InterviewController::class, 'checkDuplicateEmail']);
+
+
+
 
 //Bookings Route
 Route::middleware(['auth'])->group(function () {

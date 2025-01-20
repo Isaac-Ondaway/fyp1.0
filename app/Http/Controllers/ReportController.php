@@ -26,7 +26,7 @@ class ReportController extends Controller
             }
 
             // Fetch batches and faculties
-            $batches = Batch::orderBy('batchStartDate', 'desc')->get();
+            $batches = Batch::orderBy('batchStartDate', 'asc')->get();
             $faculties = $isAdmin ? Faculty::all() : Faculty::where('id', $user->facultyID)->get();
 
             // Prepare batch entry-level data

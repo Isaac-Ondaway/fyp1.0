@@ -25,16 +25,16 @@
                         {{ __('Intake') }}
                     </x-nav-link>
 
+                    <x-nav-link :href="route('programs.manage_entry_levels')" :active="request()->routeIs('programs.manage_entry_levels')" class="text-center">
+                        {{ __('Entry Levels') }}
+                    </x-nav-link>
+
                     <x-nav-link :href="route('interviews.index')" :active="request()->routeIs('interviews.index')">
                         {{ __('Interview') }}
                     </x-nav-link>
 
                     <x-nav-link :href="route('interviews-schedule.index')" :active="request()->routeIs('interviews-schedule.index')" class="text-center">
                         {{ __('Interview Scheduling') }}
-                    </x-nav-link>
-
-                    <x-nav-link :href="route('programs.manage_entry_levels')" :active="request()->routeIs('programs.manage_entry_levels')" class="text-center">
-                        {{ __('Entry Levels') }}
                     </x-nav-link>
 
                     @auth

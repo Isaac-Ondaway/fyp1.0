@@ -25,7 +25,7 @@
 
                 <!-- Faculty Selection -->
                 @if(Auth::user()->hasRole('admin'))
-                <div class="w-48">
+                <div class="w-65">
                     <label for="faculty" class="block text-gray-300 font-semibold mb-2">Select Faculty:</label>
                     <select name="faculty_id" id="faculty" class="form-select w-full rounded-md shadow-sm bg-gray-700 text-gray-100 focus:border-blue-500 focus:ring-blue-500" onchange="document.getElementById('filtersForm').submit()">
                         <option value="" {{ $selectedFacultyID ? '' : 'selected' }}>All Faculties</option>
@@ -65,7 +65,9 @@
                                     <th class="py-2 px-4 text-center">STAM</th>
                                     <th class="py-2 px-4 text-center">Diploma Setaraf</th>
                                     <th class="py-2 px-4 text-center">Total</th>
-                                    <th class="py-2 px-4 text-center">Action</th>
+                                    @if(Auth::user()->hasRole('faculty'))
+                                        <th class="py-2 px-4 text-center">Action</th>
+                                    @endif
                                 </tr>
                             </thead>
                                     @php
@@ -83,17 +85,18 @@
                                     <td class="py-2 px-4 text-center">{{ $program->programID }}</td>
                                     <td class="py-2 px-4">{{ $program->programName }}</td>
                                     <td class="py-2 px-4 text-center">
-                                        <input type="number" name="intake[{{ $program->programID }}][stpm]" class="form-input bg-gray-700 text-gray-100 rounded-md w-full focus:border-blue-500 focus:ring-blue-500 text-center" placeholder="STPM Count" value="{{ $existingIntakes[$program->programID][1] ?? 0 }}" required>
+                                        <input type="number" name="intake[{{ $program->programID }}][stpm]" class="form-input bg-gray-700 text-gray-100 rounded-md w-full focus:border-blue-500 focus:ring-blue-500 text-center" placeholder="STPM Count" value="{{ $existingIntakes[$program->programID][1] ?? 0 }}" @if(Auth::user()->hasRole('admin')) readonly @endif required>
                                     </td>
                                     <td class="py-2 px-4 text-center">
-                                        <input type="number" name="intake[{{ $program->programID }}][stam]" class="form-input bg-gray-700 text-gray-100 rounded-md w-full focus:border-blue-500 focus:ring-blue-500 text-center" placeholder="STAM Count" value="{{ $existingIntakes[$program->programID][2] ?? 0 }}" required>
+                                        <input type="number" name="intake[{{ $program->programID }}][stam]" class="form-input bg-gray-700 text-gray-100 rounded-md w-full focus:border-blue-500 focus:ring-blue-500 text-center" placeholder="STAM Count" value="{{ $existingIntakes[$program->programID][2] ?? 0 }}" @if(Auth::user()->hasRole('admin')) readonly @endif required>
                                     </td>
                                     <td class="py-2 px-4 text-center">
-                                        <input type="number" name="intake[{{ $program->programID }}][diploma]" class="form-input bg-gray-700 text-gray-100 rounded-md w-full focus:border-blue-500 focus:ring-blue-500 text-center" placeholder="Diploma Count" value="{{ $existingIntakes[$program->programID][3] ?? 0 }}" required>
+                                        <input type="number" name="intake[{{ $program->programID }}][diploma]" class="form-input bg-gray-700 text-gray-100 rounded-md w-full focus:border-blue-500 focus:ring-blue-500 text-center" placeholder="Diploma Count" value="{{ $existingIntakes[$program->programID][3] ?? 0 }}" @if(Auth::user()->hasRole('admin')) readonly @endif required>
                                     </td>
                                     <td class="py-2 px-4 text-center">
                                         <span class="text-gray-100 font-semibold">{{ ($existingIntakes[$program->programID][1] ?? 0) + ($existingIntakes[$program->programID][2] ?? 0) + ($existingIntakes[$program->programID][3] ?? 0) }}</span>
                                     </td>
+                                    @if(Auth::user()->hasRole('faculty'))
                                     <td class="py-2 px-4 text-center">
                                         <form action="{{ route('intakes.store') }}" method="POST">
                                             @csrf
@@ -104,6 +107,7 @@
                                             </button>
                                         </form>
                                     </td>
+                                    @endif
                                 </tr>
                                 @endforeach
                             </tbody>
@@ -114,11 +118,13 @@
                                     <td class="py-2 px-4 text-center" id="total-stam">0</td>
                                     <td class="py-2 px-4 text-center" id="total-diploma">0</td>
                                     <td class="py-2 px-4 text-center" id="grand-total">0</td>
+                                    @if(Auth::user()->hasRole('faculty'))
                                     <td class="py-2 px-4 text-center">
                                         <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">
                                             Save All Intakes
                                         </button>
                                     </td>
+                                    @endif
                                 </tr>
                             </tfoot>
 

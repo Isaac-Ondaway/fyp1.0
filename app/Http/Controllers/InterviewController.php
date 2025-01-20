@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use App\Models\Interview;
 use App\Models\Program;
 use App\Models\Batch;
+use App\Models\Faculty;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -26,7 +27,7 @@ class InterviewController extends Controller
                 ->get();
         }
     
-        $batches = Batch::all();
+        $batches = Batch::orderBy('batchStartDate', 'desc')->get();
     
         return view('interviews.create', compact('programs', 'batches'));
     }
@@ -53,41 +54,105 @@ class InterviewController extends Controller
         return redirect()->route('interviews.index')->with('success', 'Interview added successfully.');
     }
 
+    public function checkDuplicateContact(Request $request)
+    {
+        $isDuplicate = Interview::where('contactNumber', $request->contactNumber)
+            ->where('batchID', $request->batchID)
+            ->where('programID', $request->programID)
+            ->exists();
+    
+        return response()->json(['isDuplicate' => $isDuplicate]);
+    }
+    
+    public function checkDuplicateEmail(Request $request)
+    {
+        $isDuplicate = Interview::where('email', $request->email)
+            ->where('batchID', $request->batchID)
+            ->where('programID', $request->programID)
+            ->exists();
+    
+        return response()->json(['isDuplicate' => $isDuplicate]);
+    }
+    
+
+    public function update(Request $request, $id)
+    {
+        Log::debug($request->all());
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'contact_number' => 'required|string|max:20',
+            'email' => 'required|email|max:255',
+        ]);
+    
+        $interview = Interview::findOrFail($id);
+        $interview->update([
+            'intervieweeName' => $request->name,
+            'contactNumber' => $request->contact_number,
+            'email' => $request->email,
+        ]);
+        
+    
+        return response()->json(['success' => true]);
+    }
+    
+    
+
+
     public function index(Request $request)
     {
         $user = Auth::user();
         $batchID = $request->input('batchID');
-        $programID = $request->input('programID');
+        $facultyID = $request->input('faculty_id');
+        $search = $request->input('search'); // Search query
     
         $query = Interview::query();
     
+        // Filter by batch
         if ($batchID) {
             $query->where('batchID', $batchID);
         }
     
-        if ($programID) {
-            $query->where('programID', $programID);
-        }
-    
-        if ($user->hasRole('admin')) {
-            $interviews = $query->get();
-            $programs = Program::all();
-        } elseif ($user->hasRole('faculty')) {
-            $query->whereHas('program', function ($query) use ($user) {
-                $query->where('facultyID', $user->faculty->id);
+        // Filter by faculty (admin only)
+        if ($facultyID) {
+            $query->whereHas('program', function ($q) use ($facultyID) {
+                $q->where('facultyID', $facultyID);
             });
-            $interviews = $query->get();
-            $programs = Program::where('facultyID', $user->faculty->id)->get();
+        } elseif ($user->hasRole('faculty')) {
+            // Filter interviews for faculty's own programs
+            $query->whereHas('program', function ($q) use ($user) {
+                $q->where('facultyID', $user->faculty->id);
+            });
         }
     
-        $batches = Batch::orderBy('batchStartDate', 'desc')->get();
+        // Search by intervieweeName, contactNumber, or programName
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('intervieweeName', 'LIKE', "%$search%") // Fixed column name
+                  ->orWhere('contactNumber', 'LIKE', "%$search%") // Fixed column name
+                  ->orWhereHas('program', function ($subQuery) use ($search) {
+                      $subQuery->where('programName', 'LIKE', "%$search%");
+                  });
+            });
+        }
     
+        $interviews = $query->get();
+        
+        
+        // Handle AJAX request
         if ($request->ajax()) {
             return view('interviews.partials.interview-list', compact('interviews'))->render();
         }
     
-        return view('interviews.index', compact('interviews', 'batches', 'programs'));
+        $batches = Batch::all();
+        $faculties = $user->hasRole('admin') ? Faculty::all() : null;
+
+        $batches = Batch::orderBy('batchStartDate', 'desc')->get();
+    
+        return view('interviews.index', compact('interviews', 'batches', 'faculties', 'batchID', 'facultyID'));
     }
+    
+    
+    
     
     
 
