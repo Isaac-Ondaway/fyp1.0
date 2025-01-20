@@ -213,6 +213,8 @@ class InterviewScheduleController extends Controller
                 'email' => $schedule->interviewee->email,
                 'venue' => $schedule->venue,
                 'contactNumber' => $schedule->interviewee->contactNumber,
+                'programName' => $schedule->program->programName ?? 'N/A', // Add program name
+                'batchName' => $schedule->batch->batchName ?? 'N/A', // Add batch name
             ];
         });
     

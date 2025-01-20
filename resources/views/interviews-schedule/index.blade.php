@@ -35,6 +35,9 @@
             <input type="hidden" name="interview_id" id="modalInterviewID">
 
             <div class="text-gray-300 space-y-6">
+
+                <p><strong>Program Name:</strong> <span id="modalProgramName">N/A</span></p> <!-- Program Name -->
+                <p><strong>Batch:</strong> <span id="modalBatchName">N/A</span></p>
                 <!-- Interviewee Name -->
                 <div>
                     <label class="block font-semibold text-sm text-gray-400">Interviewee Name:</label>
@@ -189,6 +192,10 @@
         document.getElementById('modalVenue').value = schedule.venue || '';
         document.getElementById('modalStatus').value = schedule.status || 'Pending';
         document.getElementById('modalRemarks').value = schedule.remarks || '';
+
+            // Populate Program Name and Batch
+    document.getElementById('modalProgramName').innerText = schedule.programName || 'N/A';
+    document.getElementById('modalBatchName').innerText = schedule.batchName || 'N/A';
 
         document.getElementById('interviewModal').classList.remove('hidden');
     }
