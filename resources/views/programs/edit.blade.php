@@ -114,7 +114,7 @@
                 @foreach($attributes as $key => $label)
                 <div class="mb-4">
                     <label for="{{ $key }}" class="block text-gray-300 font-bold mb-2">{{ $label }}:</label>
-                    <select id="{{ $key }}" name="{{ $key }}" class="form-select rounded-md shadow-sm w-full bg-gray-700 text-gray-100" required>
+                    <select id="{{ $key }}" name="{{ $key }}" class="form-select rounded-md shadow-sm w-full bg-gray-700 text-gray-100" {{ Auth::user()->hasRole('admin') ? 'disabled' : '' }} required>
                         <option value="1" {{ $program->$key == 1 ? 'selected' : '' }}>Yes</option>
                         <option value="0" {{ $program->$key == 0 ? 'selected' : '' }}>No</option>
                     </select>
