@@ -61,7 +61,7 @@ class ProgramController extends Controller
         }
     
         // Retrieve all batches from the database
-        $batches = Batch::all();
+        $batches = Batch::orderBy('batchID', 'desc')->get(); 
     
         return view('programs.create', compact('faculties', 'batches', 'user'));
     }
@@ -206,8 +206,7 @@ class ProgramController extends Controller
     public function destroy($programID, $batchID)
     {
         $program = Program::where('programID', $programID)->where('batchID', $batchID)->firstOrFail();
-        $this->authorize('delete', $program);
-    
+
         $program->delete();
     
         return redirect()->route('programs.index')->with('success', 'Program deleted successfully.');
