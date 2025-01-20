@@ -36,7 +36,7 @@
     </div>
 
     <!-- Modal Body -->
-    <form @submit.prevent="saveEvent">
+    <form @submit.prevent="submitEvent">
       <div class="space-y-4">
         <!-- Title -->
         <div>
@@ -247,7 +247,7 @@ export default {
           right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth',
         },
         selectable: true,
-        editable: true,
+        editable: false,
         select: this.handleDateSelect, // Open modal when a date is selected
         eventClick: this.handleEventClick, // Handle event clicks
         events: [], // Fetched events
@@ -310,9 +310,11 @@ export default {
 
     submitEvent() {
     if (this.eventForm.id) {
+      console.log('Event ID:', this.eventForm.id);
       // Update existing event
       this.updateEvent();
     } else {
+      console.log('Event ID:', this.eventForm.id);
       // Create a new event
       this.saveEvent();
     }
@@ -451,25 +453,31 @@ export default {
     /**
      * Update event
      */
-    async updateEvent() {
-    try {
-      const response = await fetch(`/events/update/${this.eventForm.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(this.eventForm),
-      });
+     async updateEvent() {
+  try {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-      if (response.ok) {
-        this.refreshEvents();
-        this.closeModal();
-        alert('Event updated successfully!');
-      } else {
-        console.error('Failed to update event.');
-      }
-    } catch (error) {
-      console.error('Error updating event:', error);
+    const response = await fetch(`/events/update/${this.eventForm.id}`, {
+      method: 'PUT', // Use PUT
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': csrfToken, // Include CSRF token
+      },
+      body: JSON.stringify(this.eventForm),
+    });
+
+    if (response.ok) {
+      this.refreshEvents();
+      this.closeModal();
+      alert('Event updated successfully!');
+    } else {
+      console.error('Failed to update event.');
     }
-  },
+  } catch (error) {
+    console.error('Error updating event:', error);
+  }
+}
+,
 
   closeModal() {
     this.isModalOpen = false;

@@ -120,7 +120,7 @@ Route::post('/bookings/store', [BookingController::class, 'store'])->name('booki
 Route::get('/events/fetch', [EventController::class, 'fetchEvents']);
 Route::post('/events/store', [EventController::class, 'storeEvent']);
 Route::get('/events/show/{id}', [EventController::class, 'showEvent']);
-Route::post('/events/update/{id}', [EventController::class, 'updateEvent']);
+Route::put('/events/update/{id}', [EventController::class, 'updateEvent']);
 Route::delete('/events/delete/{id}', [EventController::class, 'destroy']);
 
 

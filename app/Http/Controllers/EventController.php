@@ -143,8 +143,19 @@ class EventController extends Controller
 
     public function updateEvent(Request $request, $id)
     {
+        // Remove the "local-local-" prefix if present
+        if (str_starts_with($id, 'local-local-')) {
+            $id = str_replace('local-local-', '', $id);
+        }
+    
+        // Fetch the event by ID
         $event = Event::find($id);
     
+        if (!$event) {
+            return response()->json(['error' => 'Event not found'], 404);
+        }
+    
+        // Validate and update the event
         $request->validate([
             'title' => 'required|string|max:255',
             'start_datetime' => 'required|date',
@@ -153,12 +164,7 @@ class EventController extends Controller
             'color' => 'nullable|string',
         ]);
     
-        // Update event details in Google Calendar if it's public
-        if ($event->visibility === 'public') {
-            $this->googleCalendarService->updateEvent($event->google_event_id, $request->all());
-        }
-    
-        // Update event details in the database
+        // Update event
         $event->update([
             'title' => $request->title,
             'description' => $request->description,
@@ -172,6 +178,7 @@ class EventController extends Controller
         return response()->json(['success' => true, 'event' => $event]);
     }
     
+    
     public function showEvent($id)
 {
     $event = Event::find($id);
@@ -181,21 +188,6 @@ class EventController extends Controller
     return response()->json(['error' => 'Event not found'], 404);
 }
 
-
-    // public function deleteEvent($id)
-    // {
-    //     $event = Event::find($id);
-    
-    //     // Delete event from Google Calendar if it's public
-    //     if ($event->visibility === 'public') {
-    //         $this->googleCalendarService->deleteEvent($event->google_event_id);
-    //     }
-    
-    //     // Delete the event from the database
-    //     $event->delete();
-    
-    //     return response()->json(['success' => true]);
-    // }
     public function destroy($id)
     {
         // Strip "local-" if it exists
