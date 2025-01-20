@@ -20,8 +20,14 @@ class InterviewScheduleController extends Controller
         $batchID = $request->input('batchID');
         $programID = $request->input('programID');
     
-        // Query for events based on batch and program filters
-        $query = InterviewSchedule::query()->with('interviewee', 'program', 'batch');
+        // Get the logged-in user's faculty ID
+        $facultyID = auth()->user()->facultyID;
+    
+        // Query for events based on batch, program filters, and faculty ownership
+        $query = InterviewSchedule::query()->with('interviewee', 'program', 'batch')
+            ->whereHas('program', function ($query) use ($facultyID) {
+                $query->where('facultyID', $facultyID);
+            });
     
         if ($batchID) {
             $query->where('batch_id', $batchID);
@@ -41,12 +47,13 @@ class InterviewScheduleController extends Controller
             ];
         });
     
-        // Fetch all batches and programs for filters
+        // Fetch all batches and programs for filters (limited to the logged-in user's faculty)
         $batches = Batch::all();
-        $programs = Program::all();
+        $programs = Program::where('facultyID', $facultyID)->get();
     
-        return view('interviews-schedule.index', compact('events', 'batches', 'programs','schedules'));
+        return view('interviews-schedule.index', compact('events', 'batches', 'programs', 'schedules'));
     }
+    
     
     /**
      * Show the form for creating a new interview schedule.
@@ -104,21 +111,32 @@ class InterviewScheduleController extends Controller
     /**
      * Get interview schedules as JSON for the calendar.
      */
-    public function calendarEvents()
+    public function calendarEvents(Request $request)
     {
-        $events = InterviewSchedule::with('interviewee')->get()->map(function ($schedule) {
+        $query = InterviewSchedule::with('interviewee', 'program');
+    
+        if (!auth()->user()->hasRole('Admin')) {
+            // If not admin, filter by faculty
+            $facultyID = auth()->user()->facultyID;
+            $query->whereHas('program', function ($query) use ($facultyID) {
+                $query->where('facultyID', $facultyID);
+            });
+        }
+    
+        $events = $query->get()->map(function ($schedule) {
             return [
                 'title' => $schedule->interviewee->intervieweeName,
                 'start' => $schedule->scheduled_date->format('Y-m-d H:i:s'),
                 'extendedProps' => [
                     'status' => $schedule->status,
                     'remarks' => $schedule->remarks,
-                ]
+                ],
             ];
         });
-
+    
         return response()->json($events);
     }
+    
     
     /**
      * Show the form for editing the specified interview schedule.
@@ -171,13 +189,18 @@ class InterviewScheduleController extends Controller
     public function getEventsForDate(Request $request)
     {
         $date = $request->input('date');
-
-        // Fetch all schedules for the given date
-        $schedules = InterviewSchedule::with('interviewee') // Relationship to `interviews` table
-            ->whereDate('scheduled_date', $date)
-            ->get();
-
-        // Format the data to be sent to the frontend
+        $query = InterviewSchedule::with('interviewee', 'program');
+    
+        if (!auth()->user()->hasRole('Admin')) {
+            // If not admin, filter by faculty
+            $facultyID = auth()->user()->facultyID;
+            $query->whereHas('program', function ($query) use ($facultyID) {
+                $query->where('facultyID', $facultyID);
+            });
+        }
+    
+        $schedules = $query->whereDate('scheduled_date', $date)->get();
+    
         $events = $schedules->map(function ($schedule) {
             return [
                 'schedule_id' => $schedule->schedule_id,
@@ -192,31 +215,12 @@ class InterviewScheduleController extends Controller
                 'contactNumber' => $schedule->interviewee->contactNumber,
             ];
         });
-
+    
         return response()->json($events);
     }
+    
+    
 
-    // public function scheduleInterview(Request $request, SystemEmailService $emailService)
-    // {
-
-    //      // Log the request to verify it's received
-    //      \Log::info('Email Request Received:', $request->all());
-
-    //     // Validate the input
-    //     $validated = $request->validate([
-    //         'interviewee_id' => 'required|exists:interviews,interviewID', // Validate against `interviews.interviewID`
-    //         'scheduled_date' => 'required|date_format:Y-m-d H:i',
-    //     ]);
-
-    //     // Retrieve the schedule from `interview_schedule`
-    //     $schedule = InterviewSchedule::with('interviewee')->where('interviewee_id', $validated['interviewee_id'])->firstOrFail();
-
-    //     // Compose the email
-    //     $emailService->sendEmail(
-    //         $schedule->interviewee->email, // Access the email from the related `interviewee`
-    //         'Interview Scheduled',
-    //         "Dear {$schedule->interviewee->intervieweeName},\n\nYour interview is scheduled as follows:\nDate & Time: {$schedule->scheduled_date->format('Y-m-d H:i')}\n\nThank you!"
-    //     );
 
     public function scheduleInterview(Request $request, SystemEmailService $emailService)
 {
