@@ -64,6 +64,8 @@ Route::middleware('auth')->group(function () {
     Route::delete('/programs/{programID}/{batchID}', [ProgramController::class, 'destroy'])->name('programs.destroy');
     Route::get('/programs/manage-entry-levels', [ProgramController::class, 'manageEntryLevels'])->name('programs.manage_entry_levels');
     Route::post('/programs/manage-entry-levels', [ProgramController::class, 'updateEntryLevels'])->name('programs.update_entry_levels');
+    Route::get('/programs/filter', [ProgramController::class, 'filter'])->name('programs.filter');
+
 
 });
 

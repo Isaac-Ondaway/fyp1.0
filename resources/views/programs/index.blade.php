@@ -20,6 +20,21 @@
                         @endforeach
                     </select>
                 </div>
+
+                @if(Auth::user()->hasRole('admin'))
+                    <!-- Faculty Filter -->
+                    <div class="w-65">
+                        <label for="facultyFilter" class="block text-gray-300 font-semibold mb-2">Select Faculty:</label>
+                        <select id="facultyFilter" name="facultyID" class="form-select w-full rounded-md shadow-sm bg-gray-700 text-gray-100 focus:border-blue-500 focus:ring-blue-500">
+                            <option value="">All Faculty</option>
+                            @foreach($faculties as $faculty)
+                                <option value="{{ $faculty->id }}">{{ $faculty->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                @endif
+
                 <div class="mt-7">
                 @if (!auth()->user()->hasRole('admin'))
                     <a href="{{ route('programs.create') }}" class="btn btn-primary bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
@@ -124,35 +139,48 @@
 
     <!-- JavaScript for AJAX and Modal Handling -->
     <script>
-    document.getElementById('batchFilter').addEventListener('change', function() {
-        const batchID = this.value;
-        const programList = document.getElementById('programList');
-        
-        if (batchID) {
-            // Show a loading message
-            programList.innerHTML = '<p class="text-gray-300 p-4">Loading programs...</p>';
-            
-            // Fetch programs based on selected batch
-            fetch(`/programs/batch/${batchID}`)
-                .then(response => response.text())
-                .then(html => {
-                    if (html.trim() === "") {
-                        // If the response is empty, display "No programs found" message
-                        programList.innerHTML = '<p class="text-gray-300 p-4">No programs found for the selected batch.</p>';
-                    } else {
-                        // Otherwise, display the returned HTML
-                        programList.innerHTML = html;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching programs:', error);
-                    programList.innerHTML = '<p class="text-gray-300 p-4">Failed to load programs.</p>';
-                });
-        } else {
-            // Clear the program list if no batch is selected
-            programList.innerHTML = '<p class="text-gray-300">Please select a batch to view programs.</p>';
-        }
-    });
+document.getElementById('batchFilter').addEventListener('change', fetchFilteredPrograms);
+document.getElementById('facultyFilter').addEventListener('change', fetchFilteredPrograms);
+
+function fetchFilteredPrograms() {
+    const batchFilter = document.getElementById('batchFilter');
+    const facultyFilter = document.getElementById('facultyFilter');
+    const programList = document.getElementById('programList');
+
+    if (!programList) {
+        console.error('Program list container not found.');
+        return;
+    }
+
+    // Get filter values
+    const batchID = batchFilter ? batchFilter.value : '';
+    const facultyID = facultyFilter ? facultyFilter.value : '';
+
+    // Show a loading message
+    programList.innerHTML = '<p class="text-gray-300 p-4">Loading programs...</p>';
+
+    // Build query parameters
+    const params = new URLSearchParams();
+    if (batchID) params.append('batchID', batchID);
+    if (facultyID) params.append('facultyID', facultyID);
+
+    // Fetch programs based on selected filters
+    fetch(`/programs/filter?${params.toString()}`)
+        .then(response => response.text())
+        .then(html => {
+            if (html.trim() === '') {
+                programList.innerHTML = '<p class="text-gray-300 p-4">No programs found for the selected filters.</p>';
+            } else {
+                programList.innerHTML = html;
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching programs:', error);
+            programList.innerHTML = '<p class="text-gray-300 p-4">Failed to load programs.</p>';
+        });
+}
+
+
 
     function showProgramModal(program) {
     // Populate modal fields

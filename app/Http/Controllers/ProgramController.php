@@ -42,6 +42,33 @@ class ProgramController extends Controller
     
         return view('programs.index', compact('programs', 'batches', 'faculties'));
     }
+
+    public function filter(Request $request)
+    {
+        $user = Auth::user();
+        $query = Program::with('faculty', 'batch');
+    
+        // Apply batch filter if provided
+        if ($request->has('batchID') && $request->batchID) {
+            $query->where('batchID', $request->batchID);
+        }
+    
+        // Apply faculty filter for admin or restrict to user's faculty for non-admin
+        if ($user->hasRole('admin')) {
+            if ($request->has('facultyID') && $request->facultyID) {
+                $query->where('facultyID', $request->facultyID);
+            }
+        } else {
+            // Restrict to programs belonging to the logged-in user's faculty
+            $query->where('facultyID', $user->facultyID);
+        }
+    
+        $programs = $query->get();
+        $batches = Batch::orderBy('batchStartDate', 'desc')->get();
+    
+        return view('programs.partials.program_list', compact('programs','batches'))->render();
+    }
+    
     
     
 
