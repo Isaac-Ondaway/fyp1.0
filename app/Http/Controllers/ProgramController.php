@@ -39,8 +39,10 @@ class ProgramController extends Controller
         $faculties = Faculty::all(); // Fetch all faculties
 
         $batches = Batch::orderBy('batchStartDate', 'desc')->get();
+
+        $facultyID = Auth::user()->facultyID;
     
-        return view('programs.index', compact('programs', 'batches', 'faculties'));
+        return view('programs.index', compact('programs', 'batches', 'faculties', 'facultyID'));
     }
 
     public function filter(Request $request)
@@ -99,6 +101,9 @@ class ProgramController extends Controller
      */
     public function store(Request $request)
     {
+        // Log the incoming request data
+        \Log::info('Incoming request data:', $request->all());
+    
         // Authorize the request
         $this->authorize('create', Program::class);
     
@@ -106,7 +111,7 @@ class ProgramController extends Controller
     
         // Validation rules
         $rules = [
-            'programID' => 'required|string|max:255|unique:programs,programID',
+            'programID' => 'required|string|max:255|',
             'batchID' => 'required|exists:batches,batchID',
             'programName' => 'required|string|max:255',
             'programSem' => 'required|integer',
@@ -127,27 +132,32 @@ class ProgramController extends Controller
             'isOKU' => 'required|boolean',
         ];
     
-        // If the user is an admin, include facultyID in validation
         if ($user->hasRole('admin')) {
             $rules['facultyID'] = 'required|exists:faculty,id';
-            $rules['programStatus'] = 'required|in:Pending,Approved,Rejected'; // Optional for admin
+            $rules['programStatus'] = 'required|in:Pending,Approved,Rejected';
         }
     
         // Validate the request input
         $validatedData = $request->validate($rules);
+        \Log::info('Validated data:', $validatedData);
     
-        // Automatically assign facultyID for non-admin users
+        // Assign additional data for non-admin users
         if (!$user->hasRole('admin')) {
             $validatedData['facultyID'] = $user->facultyID;
-            $validatedData['programStatus'] = 'Pending'; // Non-admin users can't set status
+            $validatedData['programStatus'] = 'Pending';
         }
     
-        // Create a new program record
-        Program::create($validatedData);
-    
-        // Redirect to the programs index with a success message
-        return redirect()->route('programs.index')->with('success', 'Program created successfully.');
+        // Attempt to create the program
+        try {
+            Program::create($validatedData);
+            \Log::info('Program created successfully.');
+            return redirect()->route('programs.index')->with('success', 'Program created successfully.');
+        } catch (\Exception $e) {
+            \Log::error('Error creating program:', ['message' => $e->getMessage()]);
+            return back()->withErrors(['error' => 'Failed to create program.']);
+        }
     }
+    
     
     
     

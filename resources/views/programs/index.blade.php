@@ -33,6 +33,8 @@
                         </select>
                     </div>
                 </div>
+                @else
+    <input type="hidden" id="facultyFilter" value="{{ $facultyID }}">
                 @endif
 
                 <div class="mt-7">
@@ -150,6 +152,10 @@ function fetchFilteredPrograms() {
     if (!programList) {
         console.error('Program list container not found.');
         return;
+    }
+
+    if (facultyFilter) {
+        facultyFilter.addEventListener('change', fetchFilteredPrograms);
     }
 
     // Get filter values

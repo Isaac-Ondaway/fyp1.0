@@ -43,10 +43,11 @@
         <select name="batchID" id="batchID" class="bg-gray-700 text-white rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
             <option value="">All Batches</option>
             @foreach ($batches as $batch)
-                <option value="{{ $batch->batchID }}">{{ $batch->batchName }}</option>
+                <option value="{{ $batch->batchID }}" data-batch-id="{{ $batch->batchID }}">{{ $batch->batchName }}</option>
             @endforeach
         </select>
     </div>
+
 
     <!-- Faculty Filter -->
     @if(auth()->check() && auth()->user()->hasRole('admin'))
@@ -322,5 +323,22 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
     </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+    const batchSelect = document.getElementById('batchID');
+    const options = Array.from(batchSelect.options); // Convert options to an array
+
+    // Sort options in descending order based on data-batch-id
+    const sortedOptions = options.slice(1).sort((a, b) => {
+        return b.getAttribute('data-batch-id') - a.getAttribute('data-batch-id');
+    });
+
+    // Clear and re-add the options
+    batchSelect.innerHTML = '';
+    batchSelect.appendChild(options[0]); // Append the "All Batches" option
+    sortedOptions.forEach(option => batchSelect.appendChild(option));
+});
+</script>
 
 </x-app-layout>
